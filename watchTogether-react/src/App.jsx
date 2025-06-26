@@ -103,26 +103,52 @@ export default function App() {
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <Routes>
+        <Route path="/" element={
+          <Home 
+            onLogin={openLogin} 
+            onRegister={openRegister} 
+            onProfile={openProfile}
+            isAuthenticated={isAuthenticated}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+          />
+        } />
+        <Route path="/profile" element={
+          <Profile 
+            currentUser={currentUser} 
+            onClose={closeProfile} 
+            onLogout={handleLogout}
+            onViewUser={openUserProfile}
+          />
+        } />
+        <Route path="/user/:username" element={
+          viewingUser ? (
+            <UserProfile 
+              user={viewingUser}
+              currentUser={currentUser} 
+              onClose={closeUserProfile} 
+              onLogout={handleLogout}
+            />
+          ) : (
+            <div>User not found</div>
+          )
+        } />
+      </Routes>
+      {/* Модальные окна логина и регистрации */}
+      {modal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+          <div className="relative" onClick={e => e.stopPropagation()}>
+            {modal === 'login' && (
+              <Login onSwitchToRegister={openRegister} onClose={closeModal} onLogin={handleLogin} />
+            )}
+            {modal === 'register' && (
+              <Register onSwitchToLogin={openLogin} onClose={closeModal} />
+            )}
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold" onClick={closeModal} aria-label="Close">×</button>
+          </div>
+        </div>
+      )}
     </>
   )
 }
