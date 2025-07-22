@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
-public class AuthService implements IAuthService {
+public class AuthService implements IAuthService { //TODO: add change password function
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
     private final AuthCredentialsRepository repository;
@@ -54,7 +54,7 @@ public class AuthService implements IAuthService {
     @Override
     public Optional<String> authenticate(LoginRequest request) {
         Optional<String> token;
-        token = repository.existsByLoginOrEmail(request.getLogin(), request.getLogin())
+        token = repository.existsByLoginOrEmail(request.getLogin(), request.getLogin()) //TODO: сюда добавить проверку не блокнту ли пользователь и бросать exception
                 .filter(u -> passwordEncoder.matches(
                         request.getPassword(),
                         u.getPasswordHash()))

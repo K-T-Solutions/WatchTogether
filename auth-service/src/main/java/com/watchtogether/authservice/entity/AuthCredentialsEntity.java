@@ -39,7 +39,7 @@ public class AuthCredentialsEntity {
     private boolean enabled = true; // Для блокировки аккаунта
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VerificationTokenEntity> verificationTokens = new ArrayList<>();
+    private List<VerificationCodeEntity> verificationTokens = new ArrayList<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private TwoFactorAuth twoFactorAuth;

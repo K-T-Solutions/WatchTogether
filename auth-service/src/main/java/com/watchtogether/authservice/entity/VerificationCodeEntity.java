@@ -10,9 +10,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "verification_tokens")
-public class VerificationTokenEntity {
+public class VerificationCodeEntity { //TODO: мб в редисе сделать
 
-    public enum TokenType {
+    public enum CodeType {
         EMAIL_VERIFICATION,
         PASSWORD_RESET,
         EMAIL_CHANGE
@@ -32,7 +32,7 @@ public class VerificationTokenEntity {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private TokenType type;
+    private CodeType type;
 
     @Column
     private String newEmail; // Для смены email
