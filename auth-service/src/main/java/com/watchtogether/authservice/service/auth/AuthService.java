@@ -2,6 +2,8 @@ package com.watchtogether.authservice.service.auth;
 
 import com.watchtogether.authservice.entity.AuthCredentialsEntity;
 import com.watchtogether.authservice.event.UserRegisteredEvent;
+import com.watchtogether.authservice.exception.EmailAlreadyTakenException;
+import com.watchtogether.authservice.exception.LoginAlreadyTakenException;
 import com.watchtogether.authservice.kafka.KafkaProducer;
 import com.watchtogether.authservice.repository.AuthCredentialsRepository;
 import com.watchtogether.authservice.request.LoginRequest;
@@ -28,9 +30,9 @@ public class AuthService implements IAuthService {
     public void registerUser(RegisterRequest request) {
 
         if (repository.existsByLogin(request.getLogin())) {
-
+            throw new LoginAlreadyTakenException("This login already exists");
         } else if (repository.existsByEmail(request.getEmail())) {
-
+            throw new EmailAlreadyTakenException("This email already exists");
         }
 
         AuthCredentialsEntity user = new AuthCredentialsEntity();
