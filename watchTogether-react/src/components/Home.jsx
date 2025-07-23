@@ -84,34 +84,34 @@ export default function Home({ onLogin, onRegister, onProfile, isAuthenticated, 
 
         {/* Features Section */}
         <section id="features" className="w-full flex flex-col items-center py-0">
-          {/*<h3 className="text-white text-2xl font-bold mb-10 mt-16">Главные возможности WatchTogether</h3>*/}
+          {/*<h3 className="text-white text-2xl font-bold mb-10 mt-16">Main Features of WatchTogether</h3>*/}
           {/* Feature 1 */}
           <div className="w-full flex flex-col md:flex-row items-center justify-between py-12 px-4 md:px-24
            bg-[#070710]
            rounded-2xl shadow-2xl">
             <div className="w-full md:w-1/2 flex flex-col items-start mb-8 md:mb-0">
               <span className="mb-4 text-4xl">💬</span>
-              <h4 className="text-white text-2xl font-semibold mb-2">Общий чат и реакции</h4>
-              <p className="text-gray-300 text-lg">Общайтесь в реальном времени, делитесь эмоциями и используйте реакции, чтобы сделать просмотр ещё веселее и живее.</p>
+              <h4 className="text-white text-2xl font-semibold mb-2">Group Chat & Reactions</h4>
+              <p className="text-gray-300 text-lg">Chat in real time, share your emotions, and use reactions to make watching together even more fun and lively.</p>
             </div>
             <div className="w-full md:w-1/2 flex justify-center">
               <div className="bg-[#232346] rounded-2xl shadow-lg w-[510px] h-[285px] md:w-[630px] md:h-[360px] flex items-center justify-center">
-                <span className="text-gray-500 text-base select-none">Промо-видео скоро</span>
+                <span className="text-gray-500 text-base select-none">Promo video coming soon</span>
               </div>
             </div>
           </div>
-          {/* Feature 2 */} /*TODO: change bg color*/
+          {/* Feature 2 */} {/*TODO: change bg color*/}
           <div className="w-full flex flex-col md:flex-row items-center justify-between py-12 px-4 md:px-24
            bg-gradient-to-l from-[#1a023f] to-[#070710] 
            rounded-2xl shadow-2xl">
             <div className="w-full md:w-1/2 flex flex-col items-start mb-8 md:mb-0">
               <span className="mb-4 text-4xl">🔗</span>
-              <h4 className="text-white text-2xl font-semibold mb-2">Лёгкое приглашение друзей</h4>
-              <p className="text-gray-300 text-lg">Создайте комнату и пригласите друзей одной ссылкой — не требуется регистрация для гостей!</p>
+              <h4 className="text-white text-2xl font-semibold mb-2">Easy Invite</h4>
+              <p className="text-gray-300 text-lg">Create a room and invite friends with a single link — no registration required for guests!</p>
             </div>
             <div className="w-full md:w-1/2 flex justify-center">
               <div className="bg-[#181828] rounded-2xl shadow-lg w-[510px] h-[285px] md:w-[630px] md:h-[360px] flex items-center justify-center">
-                <span className="text-gray-500 text-base select-none">Промо-видео скоро</span>
+                <span className="text-gray-500 text-base select-none">Promo video coming soon</span>
               </div>
             </div>
           </div>
@@ -120,12 +120,12 @@ export default function Home({ onLogin, onRegister, onProfile, isAuthenticated, 
           rounded-2xl shadow-2xl">
             <div className="w-full md:w-1/2 flex flex-col items-start mb-8 md:mb-0">
               <span className="mb-4 text-4xl">🕒</span>
-              <h4 className="text-white text-2xl font-semibold mb-2">Синхронный просмотр</h4>
-              <p className="text-gray-300 text-lg">Видео у всех участников всегда идёт синхронно — никто не отстаёт и не опережает, даже если кто-то ставит на паузу.</p>
+              <h4 className="text-white text-2xl font-semibold mb-2">Synchronized Watching</h4>
+              <p className="text-gray-300 text-lg">Everyone's video is always in sync — no one lags behind or gets ahead, even if someone pauses the video.</p>
             </div>
             <div className="w-full md:w-1/2 flex justify-center">
               <div className="bg-[#232346] rounded-2xl shadow-lg w-[510px] h-[285px] md:w-[630px] md:h-[360px] flex items-center justify-center">
-                <span className="text-gray-500 text-base select-none">Промо-видео скоро</span>
+                <span className="text-gray-500 text-base select-none">Promo video coming soon</span>
               </div>
             </div>
           </div>
