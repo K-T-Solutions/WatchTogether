@@ -2,7 +2,7 @@ import FlyingShips from "./FlyingShips";
 import Header from "./Header";
 import danceGif from "../assets/dance.gif";
 
-export default function Home({ onLogin, onRegister, onProfile, isAuthenticated, currentUser, onLogout }) {
+export default function Home({ onLogin, onRegister, onProfile, isAuthenticated, currentUser, onLogout, onRoomCreate }) {
   return (
     <div className="min-h-screen bg-[#070710]" id="top">
       <FlyingShips />
@@ -47,7 +47,7 @@ export default function Home({ onLogin, onRegister, onProfile, isAuthenticated, 
               <p className="text-gray-400 text-base pr-32 md:text-lg mb-4">
                 WatchTogether creates synchronized viewing experiences with real-time reactions, voice chat, and interactive features that make distance disappear during your favorite shows and movies
               </p>
-              <a href="#host" className="gradient-border mt-2">
+              <a href="#host" className="gradient-border mt-2" onClick={e => { e.preventDefault(); onRoomCreate && onRoomCreate(); }}>
                 <span className="gradient-btn text-base md:text-lg font-bold px-6 py-2">Try Now</span>
               </a>
             </div>

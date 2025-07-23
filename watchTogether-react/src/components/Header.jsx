@@ -1,7 +1,7 @@
 import ProfileMenu from "./ProfileMenu";
 import { Link } from "react-router-dom";
 
-export default function Header({ onLogin, onRegister, onProfile, isAuthenticated, currentUser, onLogout }) {
+export default function Header({ onLogin, onRegister, onProfile, isAuthenticated, currentUser, onLogout, onRoomCreate }) {
   return (
     <header className="fixed top-0 left-0 w-full flex items-center justify-between px-24 py-4 bg-[#070710] z-50">
       <div className="flex items-center">
@@ -27,9 +27,9 @@ export default function Header({ onLogin, onRegister, onProfile, isAuthenticated
             </li>
           )}
           <li>
-            <a href="#host" className="gradient-border">
+            <button type="button" className="gradient-border" onClick={onRoomCreate}>
               <span className="gradient-btn">Be a host</span>
-            </a>
+            </button>
           </li>
         </ul>
       </nav>
