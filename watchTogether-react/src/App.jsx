@@ -6,6 +6,7 @@ import Register from './components/Register'
 import Profile from './components/Profile'
 import UserProfile from './components/UserProfile'
 import RoomCreateModal from './components/RoomCreateModal';
+import Messenger from './components/Messenger';
 import './App.css'
 
 export default function App() {
@@ -149,6 +150,7 @@ export default function App() {
             onRoomCreate={openRoomCreate}
           />
         } />
+        <Route path="/messenger" element={<Messenger />} />
       </Routes>
       {/* Модальные окна логина и регистрации — всегда поверх всех страниц */}
       {modal && (
