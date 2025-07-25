@@ -50,7 +50,7 @@ export default function Register({ onSwitchToLogin, onClose }) {
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400 text-sm"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400 hover:cursor-pointer text-sm"
             tabIndex={-1}
             onClick={() => setShowPassword(v => !v)}
           >
@@ -67,7 +67,7 @@ export default function Register({ onSwitchToLogin, onClose }) {
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400 text-sm"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400 hover:cursor-pointer text-sm"
             tabIndex={-1}
             onClick={() => setShowConfirm(v => !v)}
           >
@@ -75,9 +75,9 @@ export default function Register({ onSwitchToLogin, onClose }) {
           </button>
         </div>
         {error && <div className="text-red-400 text-sm text-center">{error}</div>}
-        <button type="submit" className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-2 rounded hover:opacity-90 transition">Sign Up</button>
+        <button type="submit" className="bg-gradient-to-tr from-[#4063bd] to-[#e8652d] text-white font-bold py-2 rounded hover:opacity-90 hover:cursor-pointer transition">Sign Up</button>
         <div className="text-gray-400 text-sm text-center">
-          Already have an account? <button type="button" className="text-indigo-400 hover:underline" onClick={onSwitchToLogin}>Sign In</button>
+          Already have an account? <button type="button" className="text-indigo-400 hover:underline hover:cursor-pointer" onClick={onSwitchToLogin}>Sign In</button>
         </div>
       </form>
   );
