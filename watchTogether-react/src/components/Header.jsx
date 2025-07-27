@@ -15,8 +15,8 @@ export default function Header({ onLogin, onRegister, onProfile, isAuthenticated
       </div>
       <nav>
         <ul className="flex space-x-12 text-white font-medium text-lg items-center">
-          <li><a href="#about" className="hover:text-gray-400 ">About</a></li>
-          <li><a href="#how" className="hover:text-gray-400">How it works</a></li>
+          <li><Link to="/about" className="hover:text-gray-400 ">About</Link></li>
+          <li><a href="#features" className="hover:text-gray-400">How it works</a></li>
           <li><a href="#rooms" className="hover:text-gray-400">Rooms</a></li>
           {isAuthenticated && (
             <li>

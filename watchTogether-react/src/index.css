@@ -41,3 +41,7 @@
    background: linear-gradient(90deg, #4063bd 0%, #e8652d 100%);
   z-index: -1;
 }
+
+html {
+  scroll-behavior: smooth;
+}
