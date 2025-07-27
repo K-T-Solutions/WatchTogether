@@ -112,11 +112,12 @@ export default function Messenger(props) {
         {/* Sidebar */}
         <aside
           ref={sidebarRef}
-          className="border-r border-[#232346] flex flex-col bg-gradient-to-b from-[#181828] to-[#070710] h-full relative shadow-2xl"
+          // className="border-r border-[#232346] flex flex-col bg-gradient-to-b from-[#181828] to-[#070710] h-full relative shadow-2xl"
+          className="border-r border-[#232346] flex flex-col bg-[#070710] h-full relative shadow-2xl"
           style={{ width: sidebarWidth, minWidth: SIDEBAR_MIN, maxWidth: SIDEBAR_MAX }}
         >
           {/* Search bar */}
-          <div className="px-4 py-4 h-20 bg-[#171726]">
+          <div className="px-4 py-4 h-20 border-t  border-[#232346] bg-[#070710]">
             <input
               type="text"
               className="w-full p-2 rounded-full px-6 bg-[#232346] text-white border border-[#35356a] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 transition-all placeholder-gray-400 shadow-md"
@@ -158,7 +159,7 @@ export default function Messenger(props) {
         {/* Chat window */}
         <main className="flex-1 flex flex-col h-full bg-gradient-to-br from-[#181828] via-[#232346] to-[#070710] shadow-2xl rounded-l-2xl">
           {/* Chat header */}
-          <div className="flex items-center gap-4 px-8 h-20 border-b border-[#232346] bg-[#171726] shadow-md">
+          <div className="flex items-center gap-4 px-8 h-20 border-b border-t border-[#232346] bg-[#070710] shadow-md">
             <img
               src={chat.avatar}
               alt={chat.name}
