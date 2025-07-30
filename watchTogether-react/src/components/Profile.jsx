@@ -4,6 +4,7 @@ import Header from "./Header";
 
 export default function Profile({ currentUser, onClose, onLogout, onViewUser }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isActivityVisible, setIsActivityVisible] = useState(true);
   const [formData, setFormData] = useState({
     username: currentUser.username,
     email: currentUser.email,
@@ -162,19 +163,38 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
 
             {/* Статистика */}
             <div className="bg-[#232346] px-8 py-6">
-              <h3 className="text-white text-lg font-semibold mb-4">Your Activity</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-4 bg-[#181828] rounded-lg">
-                  <p className="text-3xl font-bold text-indigo-400">0</p>
-                  <p className="text-gray-400 text-sm">Rooms Created</p>
-                </div>
-                <div className="text-center p-4 bg-[#181828] rounded-lg">
-                  <p className="text-3xl font-bold text-indigo-400">0</p>
-                  <p className="text-gray-400 text-sm">Sessions Joined</p>
-                </div>
-                <div className="text-center p-4 bg-[#181828] rounded-lg">
-                  <p className="text-3xl font-bold text-indigo-400">0</p>
-                  <p className="text-gray-400 text-sm">Hours Watched</p>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white text-lg font-semibold">Your Activity</h3>
+                <button
+                  onClick={() => setIsActivityVisible(!isActivityVisible)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg 
+                    className={`w-5 h-5 transition-transform duration-300 ${isActivityVisible ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+              <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                isActivityVisible ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              }`}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-4 bg-[#181828] rounded-lg">
+                    <p className="text-3xl font-bold text-indigo-400">0</p>
+                    <p className="text-gray-400 text-sm">Rooms Created</p>
+                  </div>
+                  <div className="text-center p-4 bg-[#181828] rounded-lg">
+                    <p className="text-3xl font-bold text-indigo-400">0</p>
+                    <p className="text-gray-400 text-sm">Sessions Joined</p>
+                  </div>
+                  <div className="text-center p-4 bg-[#181828] rounded-lg">
+                    <p className="text-3xl font-bold text-indigo-400">0</p>
+                    <p className="text-gray-400 text-sm">Hours Watched</p>
+                  </div>
                 </div>
               </div>
             </div>

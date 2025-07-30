@@ -41,3 +41,15 @@
    background: linear-gradient(90deg, #4063bd 0%, #e8652d 100%);
   z-index: -1;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -5,10 +5,14 @@ import Login from './components/Login'
 import Register from './components/Register'
 import Profile from './components/Profile'
 import UserProfile from './components/UserProfile'
+import RoomCreateModal from './components/RoomCreateModal';
+import Messenger from './components/Messenger';
+import About from './components/About';
+import Rooms from './components/Rooms';
 import './App.css'
 
 export default function App() {
-  const [modal, setModal] = useState(null) // 'login' | 'register' | null
+  const [modal, setModal] = useState(null) // 'login' | 'register' | 'room-create' | null
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [viewingUser, setViewingUser] = useState(null)
@@ -20,6 +24,7 @@ export default function App() {
       const hash = window.location.hash.replace('#', '')
       if (hash === 'login') setModal('login')
       else if (hash === 'register') setModal('register')
+      else if (hash === 'room-create') setModal('room-create')
       else setModal(null)
     }
     syncModal()
@@ -42,6 +47,7 @@ export default function App() {
   // Modal open functions for Header
   const openLogin = useCallback(() => { window.location.hash = 'login' }, [])
   const openRegister = useCallback(() => { window.location.hash = 'register' }, [])
+  const openRoomCreate = useCallback(() => { navigate('/create-room') }, [navigate])
   const closeModal = useCallback(() => { window.location.hash = '' }, [])
 
   // Profile functions
@@ -112,6 +118,19 @@ export default function App() {
             isAuthenticated={isAuthenticated}
             currentUser={currentUser}
             onLogout={handleLogout}
+            onRoomCreate={openRoomCreate}
+          />
+        } />
+        <Route path="/about" element={<About />} />
+        <Route path="/rooms" element={
+          <Rooms 
+            onLogin={openLogin} 
+            onRegister={openRegister} 
+            onProfile={openProfile}
+            isAuthenticated={isAuthenticated}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onRoomCreate={openRoomCreate}
           />
         } />
         <Route path="/profile" element={
@@ -134,8 +153,20 @@ export default function App() {
             <div>User not found</div>
           )
         } />
+        <Route path="/create-room" element={
+          <RoomCreateModal
+            onLogin={openLogin}
+            onRegister={openRegister}
+            onProfile={openProfile}
+            isAuthenticated={isAuthenticated}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onRoomCreate={openRoomCreate}
+          />
+        } />
+        <Route path="/messenger" element={<Messenger />} />
       </Routes>
-      {/* Модальные окна логина и регистрации */}
+      {/* Модальные окна логина и регистрации — всегда поверх всех страниц */}
       {modal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
           <div className="relative" onClick={e => e.stopPropagation()}>
