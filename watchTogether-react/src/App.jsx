@@ -8,6 +8,7 @@ import UserProfile from './components/UserProfile'
 import RoomCreateModal from './components/RoomCreateModal';
 import Messenger from './components/Messenger';
 import About from './components/About';
+import Rooms from './components/Rooms';
 import './App.css'
 
 export default function App() {
@@ -121,6 +122,17 @@ export default function App() {
           />
         } />
         <Route path="/about" element={<About />} />
+        <Route path="/rooms" element={
+          <Rooms 
+            onLogin={openLogin} 
+            onRegister={openRegister} 
+            onProfile={openProfile}
+            isAuthenticated={isAuthenticated}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onRoomCreate={openRoomCreate}
+          />
+        } />
         <Route path="/profile" element={
           <Profile 
             currentUser={currentUser} 
