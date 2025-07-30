@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
-import kaifStarship from "../assets/kaifStarship.png";
-import pinkStarship from "../assets/pinkStarship.png";
-import purpleStarship from "../assets/purpleStarship.png";
+import kaifStarship from "../assets/fastShip.png";
+import pinkStarship from "../assets/circleShip.png";
+import purpleStarship from "../assets/bigShip.png";
 
 const NUM_SHIPS = 9;
 const minY = 60;
