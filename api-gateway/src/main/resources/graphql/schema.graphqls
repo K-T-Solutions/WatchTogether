@@ -1,0 +1,20 @@
+
+type Query {
+    validateToken(token: String!): Boolean!
+}
+
+type Mutation {
+    register(login: String!, email: String!, password: String!): RegisterResponse!
+    login(username: String!, password: String!): LoginResponse!
+}
+
+type LoginResponse {
+    token: String!
+    message: String
+}
+
+type RegisterResponse {
+    result: Boolean!
+    message: String
+}
+
