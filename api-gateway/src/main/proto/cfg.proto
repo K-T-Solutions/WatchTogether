@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+
+option java_package = "com.watchtogether.grpc";
+option java_outer_classname = "AuthServiceProto";
+
+service AuthService {
+  rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
+  rpc Authenticate (LoginRequest) returns (AuthenticateResponse);
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+message RegisterRequest {
+  string login = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message LoginRequest {
+  string identifier = 1; // Может быть логином или email
+  string password = 2;
+}
+
+message AuthenticateResponse {
+  string token = 1; // Пустая строка означает неудачу
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool is_valid = 1;
+}
