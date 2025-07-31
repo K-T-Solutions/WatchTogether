@@ -48,7 +48,7 @@ public class AuthService implements IAuthService { //TODO: add change password f
                 .email(savedUser.getEmail())
                 .build();
 
-//        kafkaProducer.sendRegisterEvent(event); //TODO: добавить проверки чтобы при успешной регистарции отправлялось
+        kafkaProducer.sendRegisterEvent(event); //TODO: добавить проверки чтобы при успешной регистарции отправлялось
     }
 
     @Override
