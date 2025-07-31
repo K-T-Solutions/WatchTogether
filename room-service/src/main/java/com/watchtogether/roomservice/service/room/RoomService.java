@@ -9,6 +9,7 @@ import com.watchtogether.roomservice.request.UpdateRoomRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +24,16 @@ public class RoomService implements IRoomService {
         return roomRepository.findById(roomId)
                 .orElseThrow(() ->
                         new RoomNotFoundException("Room with id " + roomId + " not found"));
+    }
+
+    @Override
+    public List<RoomEntity> getAllRooms() {
+        return roomRepository.findAll();
+    }
+
+    @Override
+    public List<RoomEntity> getAllRoomsByCategory(String categoryDisplayName) {
+        return roomRepository.findAllByCategoryDisplayName(categoryDisplayName);
     }
 
     @Override
