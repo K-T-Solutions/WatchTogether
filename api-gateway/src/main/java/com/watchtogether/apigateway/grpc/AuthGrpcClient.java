@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthGrpcClient {
 
-    @GrpcClient("authGrpcService")
+    @GrpcClient("auth-service")
     private AuthServiceGrpc.AuthServiceBlockingStub blockingStub;
 
     public AuthServiceProto.RegisterResponse registerUser(String login, String email, String password) {
