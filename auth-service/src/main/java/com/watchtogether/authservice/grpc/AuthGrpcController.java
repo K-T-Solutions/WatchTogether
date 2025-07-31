@@ -8,13 +8,15 @@ import com.watchtogether.authservice.service.auth.AuthService;
 import com.watchtogether.grpc.AuthServiceProto;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 
 import java.util.Optional;
 
 @RequiredArgsConstructor
 @GrpcService
-public class AuthGrpcService extends com.watchtogether.grpc.AuthServiceGrpc.AuthServiceImplBase {
+@Slf4j
+public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.AuthServiceImplBase {
     private final AuthService authService;
 
     @Override
@@ -22,6 +24,9 @@ public class AuthGrpcService extends com.watchtogether.grpc.AuthServiceGrpc.Auth
             AuthServiceProto.RegisterRequest request,
             StreamObserver<AuthServiceProto.RegisterResponse> responseObserver
     ) {
+
+        log.warn("Registering user");
+
         AuthServiceProto.RegisterResponse response;
 
         try {
@@ -31,11 +36,14 @@ public class AuthGrpcService extends com.watchtogether.grpc.AuthServiceGrpc.Auth
                             request.getEmail(),
                             request.getPassword()));
 
-            response = AuthServiceProto.RegisterResponse.newBuilder().setSuccess(true).build();
+            response = AuthServiceProto.RegisterResponse.newBuilder()
+                    .setSuccess(true)
+                    .setMessage("User registered successfully")
+                    .build();
         } catch (LoginAlreadyTakenException | EmailAlreadyTakenException e) {
             response = AuthServiceProto.RegisterResponse.newBuilder()
                     .setSuccess(false)
-                    .setErrorMessage(e.getMessage())
+                    .setMessage(e.getMessage())
                     .build();
         }
 

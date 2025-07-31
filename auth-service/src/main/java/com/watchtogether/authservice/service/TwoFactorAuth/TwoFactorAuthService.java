@@ -8,9 +8,9 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 @Service
 public class TwoFactorAuthService implements ITwoFactorAuthService {
-    private final MailSender mailSender;
-
-    private final String VERIFICATION_CODE_SUBJECT = ""; //TODO change
+//    private final MailSender mailSender;
+//
+//    private final String VERIFICATION_CODE_SUBJECT = ""; //TODO change
 
 //    public void sendVerificationCode(UUID userId, String emailTo) {
 //        String code = generateCode();
