@@ -13,5 +13,8 @@ public interface AuthCredentialsRepository extends JpaRepository<AuthCredentials
 
     boolean existsByEmail(String email);
 
-    Optional<AuthCredentialsEntity> existsByLoginOrEmail(String login, String email);
+    Optional<AuthCredentialsEntity> findByLoginOrEmail(String login, String email);
+
+
+
 }

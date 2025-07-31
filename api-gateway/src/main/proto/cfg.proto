@@ -37,4 +37,3 @@ message ValidateTokenRequest {
 message ValidateTokenResponse {
   bool is_valid = 1;
 }
-

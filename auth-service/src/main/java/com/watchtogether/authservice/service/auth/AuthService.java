@@ -54,7 +54,7 @@ public class AuthService implements IAuthService { //TODO: add change password f
     @Override
     public Optional<String> authenticate(LoginRequest request) {
         Optional<String> token;
-        token = repository.existsByLoginOrEmail(request.getLogin(), request.getLogin()) //TODO: сюда добавить проверку не блокнту ли пользователь и бросать exception
+        token = repository.findByLoginOrEmail(request.getLogin(), request.getLogin()) //TODO: сюда добавить проверку не блокнту ли пользователь и бросать exception
                 .filter(u -> passwordEncoder.matches(
                         request.getPassword(),
                         u.getPasswordHash()))
