@@ -31,7 +31,7 @@ message RoomGrpc {
   string description = 3;       // Описание комнаты
   RoomTypeGrpc type = 4;            // Тип комнаты
   RoomCategoryGrpc category = 5;    // Категория комнаты
-//  string password_hash = 6;     // Хеш пароля (опционально)
+  //  string password_hash = 6;     // Хеш пароля (опционально)
   int32 max_participants = 6;   // Максимальное количество участников
   string owner_id = 7;          // UUID владельца комнаты
 }
@@ -39,7 +39,7 @@ message RoomGrpc {
 enum RoomTypeGrpc {
   PUBLIC = 0;     // Публичная комната
   PRIVATE = 1;    // Приватная комната
-//  PASSWORD = 2;   // Комната с паролем
+  //  PASSWORD = 2;   // Комната с паролем
 }
 
 enum RoomCategoryGrpc {
@@ -94,14 +94,14 @@ message UpdateRoomRequestGrpc {
 
 message RoomResponseGrpc {
   RoomGrpc room = 1;              // Основные данные комнаты
-//  bool success = 2;           // Флаг успешности операции
-//  string error_message = 3;   // Сообщение об ошибке (если success=false)
+  //  bool success = 2;           // Флаг успешности операции
+  //  string error_message = 3;   // Сообщение об ошибке (если success=false)
 }
 
 message RoomListResponseGrpc {
   repeated RoomGrpc rooms = 1;    // Список комнат
-//  bool success = 2;
-//  string error_message = 3;
+  //  bool success = 2;
+  //  string error_message = 3;
 }
 
 message EmptyGrpc {}
