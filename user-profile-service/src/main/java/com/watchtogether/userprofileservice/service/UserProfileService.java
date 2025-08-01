@@ -40,7 +40,6 @@ public class UserProfileService implements IUserProfileService {
                 .map( u -> {
                     u.setDisplayName(request.getDisplayName());
                     u.setBio(request.getBio());
-                    u.setLocation(request.getLocation());
                     return userProfileRepository.save(u);
                 }).orElseThrow(() ->
                         new UserProfileNotFoundException("User profile with id " + userId + " not found"));

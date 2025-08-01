@@ -16,7 +16,7 @@ public class KafkaConsumer {
     private final ObjectMapper objectMapper;
     private final IUserProfileService userService;
 
-    @KafkaListener(topics = "user-registered", groupId = "user-profile-service-group")
+    @KafkaListener(topics = "user-registered", groupId = "user-profile-group")
     public void handleUserRegisterEvent(ConsumerRecord<String, byte[]> record ) {
         try {
             String id = record.key();
