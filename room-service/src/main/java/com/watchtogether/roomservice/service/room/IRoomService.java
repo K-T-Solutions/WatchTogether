@@ -1,6 +1,7 @@
 package com.watchtogether.roomservice.service.room;
 
 import com.watchtogether.roomservice.entity.RoomEntity;
+import com.watchtogether.roomservice.request.CreateRoomRequest;
 import com.watchtogether.roomservice.request.UpdateRoomRequest;
 
 import java.util.List;
@@ -14,4 +15,6 @@ public interface IRoomService {
     List<RoomEntity> getAllRoomsByCategory(String categoryDisplayName);
 
     RoomEntity updateRoom(UpdateRoomRequest request, UUID roomId, UUID userId);
+
+    RoomEntity createRoom(CreateRoomRequest request, UUID ownerId);
 }

@@ -1,0 +1,90 @@
+# room.graphqls
+
+extend type Query {
+    # Получение комнаты по ID
+    getRoomById(roomId: ID!): RoomResponse
+
+    # Получение всех комнат
+    getAllRooms: RoomListResponse
+
+    # Получение комнат по категории
+    getRoomsByCategory(category: RoomCategoryGrpc!): RoomListResponse
+}
+
+extend type Mutation {
+    # Создание новой комнаты
+    createRoom(request: CreateRoomRequest!): RoomResponse
+
+    # Обновление существующей комнаты
+    updateRoom(input: UpdateRoomInput!): RoomResponse
+}
+
+# ========== Основные типы ==========
+type Room {
+    id: ID!
+    name: String!
+    description: String!
+    type: RoomTypeGrpc!
+    category: RoomCategoryGrpc!
+    maxParticipants: Int!
+    ownerId: ID!
+}
+
+enum RoomTypeGrpc {
+    PUBLIC
+    PRIVATE
+}
+
+enum RoomCategoryGrpc {
+    MOVIES
+    SERIES
+    ANIME
+    MUSIC
+    GAMING
+    EDUCATION
+    SPORTS
+    STAND_UP
+    KIDS
+    ART
+    TRAVEL
+    COOKING
+    FASHION
+    LIVE
+    TESTING
+    SOCIAL
+    OTHER
+    NONE
+}
+
+# ========== Входные типы ==========
+input CreateRoomRequest {
+    name: String!
+    description: String!
+    type: RoomTypeGrpc!
+    category: RoomCategoryGrpc!
+    password: String
+    maxParticipants: Int!
+    ownerId: ID!
+}
+
+input UpdateRoomInput {
+    roomId: ID!
+    name: String
+    description: String
+    type: RoomTypeGrpc
+    category: RoomCategoryGrpc
+    ownerId: ID!
+}
+
+# ========== Ответы ==========
+type RoomResponse {
+    room: Room
+#    success: Boolean!
+#    errorMessage: String
+}
+
+type RoomListResponse {
+    rooms: [Room!]!
+#    success: Boolean!
+#    errorMessage: String
+}

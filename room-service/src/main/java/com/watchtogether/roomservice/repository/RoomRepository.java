@@ -11,5 +11,4 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
 
     List<RoomEntity> findAllByCategory(RoomCategory category);
 
-    List<RoomEntity> findAllByCategoryDisplayName(String categoryDisplayName);
 }
