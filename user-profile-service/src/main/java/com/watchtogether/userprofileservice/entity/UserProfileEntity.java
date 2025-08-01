@@ -18,7 +18,7 @@ public class UserProfileEntity {
 
     @Id
     @Column(name = "user_id")
-    private UUID userId; // Совпадает с ID из auth-service
+    private UUID userId;
 
     private String login;
 
@@ -26,28 +26,16 @@ public class UserProfileEntity {
     private String displayName;
 
     @Column
-    private String avatarUrl; // Ссылка на аватар в S3/MinIO
+    private String avatarUrl;
 
     @Column
-    private String bio; // Описание профиля
-
-    @Column
-    private String location; // Местоположение
+    private String bio;
 
     @Column(name = "email")
-    private String displayEmail; // Отображаемая почта (дублирует email из auth)
+    private String displayEmail;
 
-    @Column(name = "pending_email") //TODO: и тут пошаманить
-    private String pendingEmail; // Почта, ожидающая подтверждения
-//
-//    @Column
-//    private String websiteUrl; // Ссылка на сайт
-//
-//    @Column
-//    private String twitterHandle; // Twitter аккаунт
-//
-//    @Column
-//    private String discordHandle; // Discord аккаунт
+    @Column(name = "pending_email") //TODO: тут подумать как вообще будет проходить процесс смены почты
+    private String pendingEmail;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
