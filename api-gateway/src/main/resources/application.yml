@@ -26,3 +26,10 @@ grpc:
       enable-keep-alive: true
       keep-alive-time: 30s
       max-inbound-message-size: 16MB
+
+    room-service:
+      address: static://room-service:9090
+      negotiationType: plaintext
+      enable-keep-alive: true
+      keep-alive-time: 30s
+      max-inbound-message-size: 16MB
