@@ -56,10 +56,8 @@ services:
   auth-service-db:
     image: postgres:15-alpine
     container_name: wt-auth-service-db # Имя контейнера, как в вашем URL подключения
-    environment:
-      POSTGRES_DB: auth_db
-      POSTGRES_USER: admin_user
-      POSTGRES_PASSWORD: admin_password
+    env_file:
+      - ./services/auth-service/db.env
     ports:
       - "5002:5432" # Проброс порта, как у вас было
     volumes:
@@ -97,7 +95,7 @@ services:
   # API Gateway
   api-gateway:
     build:
-      context: ./api-gateway
+      context: ./services/api-gateway
       dockerfile: Dockerfile
     container_name: wt-api-gateway
     ports:
@@ -120,7 +118,7 @@ services:
   # Auth Service
   auth-service:
     build:
-      context: ./auth-service
+      context: ./services/auth-service
       dockerfile: Dockerfile
     container_name: wt-auth-service
     ports:
@@ -132,7 +130,7 @@ services:
       kafka:
         condition: service_healthy
     env_file:
-      - ./auth-service/.env
+      - ./services/auth-service/service.env
     networks:
       - watchtogether-network
     healthcheck:
