@@ -177,7 +177,7 @@ export default function Rooms({ onLogin, onRegister, onProfile, isAuthenticated,
         onLogout={onLogout}
       />
       
-      <div className="pt-40 w-full">
+      <div className="pt-55 w-full">
         <div className="neon-bg-section" style={{ minHeight: '100vh' }}>
           <div className="max-w-7xl mx-auto px-6 py-12">
             {/* Header Section */}
