@@ -17,12 +17,12 @@ spring:
       printer:
         enabled: true
 
-  web:
-    cors:
-      allowed-origins: "http://localhost:5173"
-      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
-      allowed-headers: "*"
-      max-age: 3600
+#  web:  <-- ЗАКОММЕНТИРУЙТЕ ИЛИ УДАЛИТЕ ЭТИ СТРОКИ
+#    cors:
+#      allowed-origins: "http://localhost:5173"
+#      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+#      allowed-headers: "*"
+#      max-age: 3600
 
 # gRPC клиент для связи с auth-service
 grpc:
@@ -41,3 +41,9 @@ grpc:
       keep-alive-time: 30s
       max-inbound-message-size: 16MB
 
+    user-profile-service:
+      address: static://user-profile-service:9090
+      negotiationType: plaintext
+      enable-keep-alive: true
+      keep-alive-time: 30s
+      max-inbound-message-size: 16MB

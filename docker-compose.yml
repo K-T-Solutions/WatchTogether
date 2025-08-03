@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
 
@@ -141,7 +140,7 @@ services:
     container_name: wt-auth-service
     ports:
       - "4002:4002" # HTTP/Actuator
-      - "9090:9090" # gRPC
+#      - "9090:9090" # gRPC
     depends_on:
       auth-service-db:
         condition: service_healthy
