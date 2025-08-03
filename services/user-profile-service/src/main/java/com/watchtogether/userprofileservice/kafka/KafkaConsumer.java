@@ -1,7 +1,8 @@
 package com.watchtogether.userprofileservice.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.watchtogether.userprofileservice.request.UserRegisterEvent;
+import com.watchtogether.userprofileservice.event.UpdateLoginEvent;
+import com.watchtogether.userprofileservice.event.UserRegisterEvent;
 import com.watchtogether.userprofileservice.service.IUserProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,21 @@ public class KafkaConsumer {
 
         } catch (Exception e) {
             log.error("Error deserializing user register event for userId: {}", record.key(), e);
+        }
+    }
+
+    @KafkaListener(topics = "update-user-cred", groupId = "user-profile-group")
+    public void handleUserUpdateLoginEvent(ConsumerRecord<String, byte[]> record ) {
+        try {
+            String id = record.key();
+            byte[] body = record.value();
+
+            UpdateLoginEvent event = objectMapper.readValue(body, UpdateLoginEvent.class);
+            log.info("Received update user login with id {} successful", event.getUserId());
+            userService.updateUserLoginById(event);
+
+        } catch (Exception e) {
+            log.error("Error deserializing update user profile event for userId: {}", record.key(), e);
         }
     }
 
