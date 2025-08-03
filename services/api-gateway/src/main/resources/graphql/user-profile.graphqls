@@ -1,0 +1,19 @@
+# user-profile.graphqls
+
+extend type Query {
+    # Get User Profile By Id
+    getUserProfileById(userId: ID!): UserProfileResponse
+
+}
+
+
+# ========== Main Types ==========
+
+type UserProfileResponse {
+    id: ID
+    login: String
+    displayName: String
+    bio: String
+    displayEmail: String
+    joinDate: String
+}

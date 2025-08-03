@@ -9,10 +9,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")  // Разрешить только localhost:5173
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // Разрешить все методы
-                .allowedHeaders("*")         // Разрешить все заголовки
+        registry.addMapping("/**") // Применяем ко всем путям
+                // ЗАМЕНЯЕМ .allowedOrigins() НА .allowedOriginPatterns()
+                .allowedOriginPatterns("*")  // ЭТО ПРАВИЛЬНЫЙ СПОСОБ ДЛЯ РАЗРАБОТКИ
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true) // Теперь это будет работать
                 .maxAge(3600);
     }
-} 
+}
