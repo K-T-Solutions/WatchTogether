@@ -1,4 +1,4 @@
-package com.watchtogether.apigateway.controller;
+package com.watchtogether.apigateway.graphql.controller;
 
 import com.watchtogether.apigateway.grpc.AuthGrpcClient;
 import com.watchtogether.grpc.AuthServiceProto;
