@@ -5,6 +5,7 @@ import com.watchtogether.authservice.exception.LoginAlreadyTakenException;
 import com.watchtogether.authservice.request.LoginRequest;
 import com.watchtogether.authservice.request.RegisterRequest;
 import com.watchtogether.authservice.service.auth.AuthService;
+import com.watchtogether.authservice.service.credentials.ICredentialsService;
 import com.watchtogether.grpc.AuthServiceProto;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -12,12 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @GrpcService
 @Slf4j
 public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.AuthServiceImplBase {
     private final AuthService authService;
+    private final ICredentialsService credentialsService;
 
     @Override
     public void registerUser(
@@ -84,6 +87,39 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
                 .setIsValid(isValid)
                 .build();
 
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void updateLogin(
+            AuthServiceProto.UpdateLoginRequestGrpc request,
+            StreamObserver<AuthServiceProto.UpdateCredResponseGrpc> responseObserver
+    ) {
+        var userEntity = credentialsService.updateLogin(UUID.fromString(
+                request.getUserId()),
+                request.getLogin());
+        AuthServiceProto.UpdateCredResponseGrpc response = AuthServiceProto.UpdateCredResponseGrpc
+                .newBuilder()
+                .setMessage("Login updated success")
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void updatePassword(
+            AuthServiceProto.UpdatePasswordRequestGrpc request,
+            StreamObserver<AuthServiceProto.UpdateCredResponseGrpc> responseObserver
+    ) {
+        var userEntity = credentialsService.updatePassword(
+                UUID.fromString(request.getUserId()),
+                request.getOldPass(),
+                request.getNewPass());
+        AuthServiceProto.UpdateCredResponseGrpc response = AuthServiceProto.UpdateCredResponseGrpc
+                .newBuilder()
+                .setMessage("Password changed success")
+                .build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }

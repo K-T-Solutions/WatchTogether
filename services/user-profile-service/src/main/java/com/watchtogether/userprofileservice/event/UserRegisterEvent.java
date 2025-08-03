@@ -1,4 +1,4 @@
-package com.watchtogether.userprofileservice.request;
+package com.watchtogether.userprofileservice.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
