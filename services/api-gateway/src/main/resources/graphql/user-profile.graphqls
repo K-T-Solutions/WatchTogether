@@ -6,6 +6,12 @@ extend type Query {
 
 }
 
+extend type Mutation {
+    #Update User Public Profile
+    updateUserProfileById(request: UpdateUserProfileRequest!): UserProfileResponse
+
+}
+
 
 # ========== Main Types ==========
 
@@ -16,4 +22,11 @@ type UserProfileResponse {
     bio: String
     displayEmail: String
     joinDate: String
+}
+
+input UpdateUserProfileRequest {
+    userId: ID
+    displayName: String
+    displayEmail: String
+    bio: String
 }
