@@ -22,7 +22,7 @@ public class UserProfileEntity {
 
     private String login;
 
-    @Column(name = "display_name")
+    @Column(name = "display_name",  nullable = false)
     private String displayName;
 
     @Column
