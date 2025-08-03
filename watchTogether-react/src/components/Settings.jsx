@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@apollo/client";
 import { GET_USER_PROFILE } from "../graphql/queries";
-import { UPDATE_USER_PROFILE } from "../graphql/mutations";
+import { UPDATE_USER_PROFILE, UPDATE_USER_LOGIN, UPDATE_USER_PASSWORD } from "../graphql/mutations";
 import { getUserFromToken } from "../utils/jwt";
 import Header from "./Header";
 import Notification from "./Notification";
@@ -78,6 +78,88 @@ export default function Settings({ currentUser, onLogout }) {
     }
   });
 
+  // Мутация для обновления логина
+  const [updateLogin, { loading: updateLoginLoading }] = useMutation(UPDATE_USER_LOGIN, {
+    onCompleted: (data) => {
+      console.log('Login update response:', data);
+      const message = data?.updateUserLogin?.message || 'Login updated successfully!';
+      
+      // Проверяем, содержит ли сообщение ошибку
+      const isError = message.toLowerCase().includes('error') || 
+                     message.toLowerCase().includes('already taken') || 
+                     message.toLowerCase().includes('not found') ||
+                     message.toLowerCase().includes('invalid');
+      
+      setNotification({
+        isVisible: true,
+        message: message,
+        type: isError ? 'error' : 'success'
+      });
+      
+      if (!isError) {
+        // Обновляем кэш Apollo Client только при успехе
+        refetch();
+        
+        // Скрываем форму и очищаем поля только при успехе
+        setShowLoginForm(false);
+        setAccountData(prev => ({
+          ...prev,
+          username: '',
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }));
+      }
+    },
+    onError: (error) => {
+      console.error('Error updating login:', error);
+      setNotification({
+        isVisible: true,
+        message: `Error updating login: ${error.message}`,
+        type: 'error'
+      });
+    }
+  });
+
+  // Мутация для обновления пароля
+  const [updatePassword, { loading: updatePasswordLoading }] = useMutation(UPDATE_USER_PASSWORD, {
+    onCompleted: (data) => {
+      console.log('Password update response:', data);
+      const message = data?.updateUserPassword?.message || 'Password updated successfully!';
+      
+      // Проверяем, содержит ли сообщение ошибку
+      const isError = message.toLowerCase().includes('error') || 
+                     message.toLowerCase().includes('invalid') || 
+                     message.toLowerCase().includes('not found');
+      
+      setNotification({
+        isVisible: true,
+        message: message,
+        type: isError ? 'error' : 'success'
+      });
+      
+      if (!isError) {
+        // Скрываем форму и очищаем поля только при успехе
+        setShowPasswordForm(false);
+        setAccountData(prev => ({
+          ...prev,
+          username: '',
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }));
+      }
+    },
+    onError: (error) => {
+      console.error('Error updating password:', error);
+      setNotification({
+        isVisible: true,
+        message: `Error updating password: ${error.message}`,
+        type: 'error'
+      });
+    }
+  });
+
   // Объединяем данные из токена с данными с сервера
   const profileData = data?.getUserProfileById;
   
@@ -107,6 +189,10 @@ export default function Settings({ currentUser, onLogout }) {
     confirmPassword: ''
   });
 
+  // Состояние для отображения форм
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+
   // Состояние для отслеживания исходных данных
   const [originalPublicProfileData, setOriginalPublicProfileData] = useState({
     displayName: '',
@@ -134,7 +220,7 @@ export default function Settings({ currentUser, onLogout }) {
       });
       
       setAccountData({
-        username: profileData?.login || currentUser?.username || '',
+        username: '',
         emails: [profileData?.displayEmail || currentUser?.email || ''],
         currentPassword: '',
         newPassword: '',
@@ -281,8 +367,90 @@ export default function Settings({ currentUser, onLogout }) {
   };
 
   const handleSaveAccount = () => {
-    // Здесь будет логика сохранения изменений аккаунта
-    console.log('Saving account:', accountData);
+    // Проверяем, что у нас есть userId
+    if (!userId) {
+      console.error('No user ID available');
+      setNotification({
+        isVisible: true,
+        message: 'No user ID available',
+        type: 'error'
+      });
+      return;
+    }
+
+    let hasChanges = false;
+
+    // Проверяем изменения логина
+    if (showLoginForm && accountData.username.trim()) {
+      const currentLogin = profileData?.login || currentUser?.username || '';
+      if (accountData.username.trim() !== currentLogin) {
+        // Валидация логина
+        if (accountData.username.trim().length < 3) {
+          setNotification({
+            isVisible: true,
+            message: 'Username must be at least 3 characters long',
+            type: 'error'
+          });
+          return;
+        }
+
+        // Обновляем логин
+        updateLogin({
+          variables: {
+            userId: userId,
+            newLogin: accountData.username.trim()
+          }
+        });
+        hasChanges = true;
+      } else {
+        setNotification({
+          isVisible: true,
+          message: 'New username is the same as current username',
+          type: 'error'
+        });
+        return;
+      }
+    }
+
+    // Проверяем изменения пароля
+    if (showPasswordForm && accountData.currentPassword && accountData.newPassword) {
+      // Валидация паролей
+      if (accountData.newPassword.length < 6) {
+        setNotification({
+          isVisible: true,
+          message: 'New password must be at least 6 characters long',
+          type: 'error'
+        });
+        return;
+      }
+
+      if (accountData.newPassword !== accountData.confirmPassword) {
+        setNotification({
+          isVisible: true,
+          message: 'New password and confirm password do not match',
+          type: 'error'
+        });
+        return;
+      }
+
+      // Обновляем пароль
+      updatePassword({
+        variables: {
+          userId: userId,
+          oldPass: accountData.currentPassword,
+          newPass: accountData.newPassword
+        }
+      });
+      hasChanges = true;
+    }
+
+    if (!hasChanges) {
+      setNotification({
+        isVisible: true,
+        message: 'Please fill in the required fields',
+        type: 'error'
+      });
+    }
   };
 
   const handleCancelPublicProfile = () => {
@@ -297,12 +465,38 @@ export default function Settings({ currentUser, onLogout }) {
 
   const handleCancelAccount = () => {
     setAccountData({
-      username: profileData?.login || currentUser?.username || '',
+      username: '',
       emails: [profileData?.displayEmail || currentUser?.email || ''],
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
     });
+    setShowLoginForm(false);
+    setShowPasswordForm(false);
+  };
+
+  const handleShowLoginForm = () => {
+    setShowLoginForm(true);
+    setShowPasswordForm(false);
+    setAccountData(prev => ({
+      ...prev,
+      username: '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }));
+  };
+
+  const handleShowPasswordForm = () => {
+    setShowPasswordForm(true);
+    setShowLoginForm(false);
+    setAccountData(prev => ({
+      ...prev,
+      username: '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }));
   };
 
   const closeNotification = () => {
@@ -483,62 +677,114 @@ export default function Settings({ currentUser, onLogout }) {
         <p className="text-gray-400">Manage your account credentials and preferences</p>
       </div>
 
-      {/* Form Fields */}
+      {/* Current Account Info */}
       <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
-        {/* Username */}
+        {/* Current Username */}
         <div>
           <label className="block text-gray-400 text-sm font-medium mb-2">
-            Username
+            Current Username
           </label>
-          <input
-            type="text"
-            name="username"
-            value={accountData.username}
-            onChange={handleAccountChange}
-            className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Enter your username..."
-          />
+          <p className="text-white text-lg font-medium">{profileData?.login || currentUser?.username || 'Not set'}</p>
         </div>
 
-        {/* Email Management */}
+        {/* Current Email */}
         <div>
           <label className="block text-gray-400 text-sm font-medium mb-2">
-            Email Addresses
+            Current Email
           </label>
-          <div className="space-y-3">
-            {accountData.emails.map((email, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => handleEmailChange(index, e.target.value)}
-                  className="flex-1 p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter email address..."
-                />
-                {accountData.emails.length > 1 && (
-                  <button
-                    onClick={() => removeEmail(index)}
-                    className="px-4 py-4 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
+          <p className="text-white text-lg font-medium">{profileData?.displayEmail || currentUser?.email || 'Not set'}</p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4 pt-4">
+          <button
+            onClick={handleShowLoginForm}
+            disabled={updateLoginLoading || updatePasswordLoading}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Update Login
+          </button>
+          <button
+            onClick={handleShowPasswordForm}
+            disabled={updateLoginLoading || updatePasswordLoading}
+            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Update Password
+          </button>
+        </div>
+      </div>
+
+      {/* Login Update Form */}
+      {showLoginForm && (
+        <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-white text-lg font-semibold">Update Username</h3>
             <button
-              onClick={addEmail}
-              className="w-full p-4 border-2 border-dashed border-gray-500 text-gray-400 hover:text-white hover:border-indigo-500 rounded-lg transition-colors"
+              onClick={() => setShowLoginForm(false)}
+              className="text-gray-400 hover:text-white transition-colors"
             >
-              + Add Email Address
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div>
+            <label className="block text-gray-400 text-sm font-medium mb-2">
+              New Username
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={accountData.username}
+              onChange={handleAccountChange}
+              className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Enter new username..."
+            />
+            <p className="text-gray-500 text-xs mt-1">Minimum 3 characters</p>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={handleSaveAccount}
+              disabled={updateLoginLoading}
+              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updateLoginLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Updating...</span>
+                </div>
+              ) : (
+                'Update Username'
+              )}
+            </button>
+            <button
+              onClick={() => setShowLoginForm(false)}
+              disabled={updateLoginLoading}
+              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
             </button>
           </div>
         </div>
+      )}
 
-        {/* Password Change */}
-        <div className="border-t border-[#232346] pt-6">
-          <h3 className="text-white text-lg font-semibold mb-4">Change Password</h3>
+      {/* Password Update Form */}
+      {showPasswordForm && (
+        <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-white text-lg font-semibold">Update Password</h3>
+            <button
+              onClick={() => setShowPasswordForm(false)}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
           <div className="space-y-4">
             <div>
               <label className="block text-gray-400 text-sm font-medium mb-2">
@@ -565,6 +811,7 @@ export default function Settings({ currentUser, onLogout }) {
                 className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Enter new password..."
               />
+              <p className="text-gray-500 text-xs mt-1">Minimum 6 characters</p>
             </div>
             <div>
               <label className="block text-gray-400 text-sm font-medium mb-2">
@@ -580,24 +827,32 @@ export default function Settings({ currentUser, onLogout }) {
               />
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4 pt-4">
-          <button
-            onClick={handleSaveAccount}
-            className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition"
-          >
-            Update Account
-          </button>
-          <button
-            onClick={handleCancelAccount}
-            className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition"
-          >
-            Cancel
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleSaveAccount}
+              disabled={updatePasswordLoading}
+              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updatePasswordLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Updating...</span>
+                </div>
+              ) : (
+                'Update Password'
+              )}
+            </button>
+            <button
+              onClick={() => setShowPasswordForm(false)}
+              disabled={updatePasswordLoading}
+              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
