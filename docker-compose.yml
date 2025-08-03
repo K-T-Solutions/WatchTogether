@@ -70,6 +70,23 @@ services:
       timeout: 5s
       retries: 5
 
+  user-service-db:
+    image: postgres:15-alpine
+    container_name: wt-user-service-db # Имя контейнера, как в вашем URL подключения
+    env_file:
+      - ./services/user-profile-service/db.env
+    ports:
+      - "5003:5432" # Проброс порта, как у вас было
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin_user -d user_profile_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 #  postgres:
 #    image: postgres:15-alpine
@@ -102,6 +119,7 @@ services:
       - "4001:4001"
     depends_on:
       - auth-service
+      - user-profile-service
       # - room-service # Раскомментируйте, когда добавите room-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -140,9 +158,59 @@ services:
       retries: 3
       start_period: 40s
 
+  user-profile-service:
+    build:
+      context: ./services/user-profile-service
+      dockerfile: Dockerfile
+    container_name: wt-user-service
+    ports:
+      - "4003:4003" # HTTP/Actuator
+#      - "9090:9090" # gRPC
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file:
+      - ./services/user-profile-service/service.env
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+#  room-service:
+#    build:
+#      context: ./services/room-service
+#      dockerfile: Dockerfile
+#    container_name: wt-room-service
+#    ports:
+#      - "4004:4004" # HTTP/Actuator
+#      - "9090:9090" # gRPC
+#    depends_on:
+##      auth-service-db:
+##        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    env_file:
+#      - ./services/
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:4002/actuator/health" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+
+
 volumes:
   postgres_data:
   auth_db_data: # Новый том для данных auth-service-db
+  user_db_data:
 
 networks:
   watchtogether-network:
