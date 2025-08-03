@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
+import { ApolloProvider } from '@apollo/client'
+import client from './apollo-client'
+import { getUserFromToken, isTokenExpired } from './utils/jwt'
 import Home from './components/Home.jsx'
 import Login from './components/Login'
 import Register from './components/Register'
@@ -17,6 +20,63 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null)
   const [viewingUser, setViewingUser] = useState(null)
   const navigate = useNavigate();
+
+  // Проверяем токен при загрузке приложения
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token && !isTokenExpired(token)) {
+      // Восстанавливаем данные пользователя из токена
+      const userData = getUserFromToken(token);
+      if (userData) {
+        // Добавляем дополнительные данные пользователя
+        const fullUserData = {
+          ...userData,
+          displayName: userData.username, // Используем username как начальное displayName
+          email: `${userData.username}@example.com`, // Временный email
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
+          friends: [
+            { 
+              username: 'Alice', 
+              displayName: 'Alice Johnson',
+              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Alice`,
+              id: Date.now() + 1,
+              bio: "Movie enthusiast and coffee lover",
+              followers: 8,
+              following: 15,
+              publicEmail: false,
+              publicFriends: true
+            },
+            { 
+              username: 'Bob', 
+              displayName: 'Bob Smith',
+              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Bob`,
+              id: Date.now() + 2,
+              bio: "Gaming and streaming fanatic",
+              followers: 23,
+              following: 12,
+              publicEmail: true,
+              publicFriends: false
+            }
+          ],
+          followers: 12,
+          following: 7
+        };
+        
+        setIsAuthenticated(true);
+        setCurrentUser(fullUserData);
+      } else {
+        // Если токен недействителен, удаляем его
+        localStorage.removeItem('authToken');
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
+    } else if (token && isTokenExpired(token)) {
+      // Если токен истек, удаляем его
+      localStorage.removeItem('authToken');
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+    }
+  }, []);
 
   // Sync modal state with hash
   useEffect(() => {
@@ -66,36 +126,8 @@ export default function App() {
 
   // Auth functions
   const handleLogin = useCallback((userData) => {
-    // Добавляем соц. данные по умолчанию
     setIsAuthenticated(true)
-    setCurrentUser({
-      ...userData,
-      friends: userData.friends || [
-        // Пример друзей-заглушек
-        { 
-          username: 'Alice', 
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Alice`,
-          id: Date.now() + 1,
-          bio: "Movie enthusiast and coffee lover",
-          followers: 8,
-          following: 15,
-          publicEmail: false,
-          publicFriends: true
-        },
-        { 
-          username: 'Bob', 
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Bob`,
-          id: Date.now() + 2,
-          bio: "Gaming and streaming fanatic",
-          followers: 23,
-          following: 12,
-          publicEmail: true,
-          publicFriends: false
-        }
-      ],
-      followers: userData.followers || 12,
-      following: userData.following || 7
-    })
+    setCurrentUser(userData)
     closeModal()
   }, [closeModal])
 
@@ -103,12 +135,13 @@ export default function App() {
     setIsAuthenticated(false)
     setCurrentUser(null)
     setViewingUser(null)
+    localStorage.removeItem('authToken') // Удаляем токен при выходе
     closeModal()
     navigate('/')
   }, [closeModal, navigate])
 
   return (
-    <>
+    <ApolloProvider client={client}>
       <Routes>
         <Route path="/" element={
           <Home 
@@ -180,6 +213,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </>
+    </ApolloProvider>
   )
 }
