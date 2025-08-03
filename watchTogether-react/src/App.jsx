@@ -8,6 +8,7 @@ import Login from './components/Login'
 import Register from './components/Register'
 import Profile from './components/Profile'
 import UserProfile from './components/UserProfile'
+import Settings from './components/Settings'
 import RoomCreateModal from './components/RoomCreateModal';
 import Messenger from './components/Messenger';
 import About from './components/About';
@@ -172,6 +173,12 @@ export default function App() {
             onClose={closeProfile} 
             onLogout={handleLogout}
             onViewUser={openUserProfile}
+          />
+        } />
+        <Route path="/settings" element={
+          <Settings 
+            currentUser={currentUser} 
+            onLogout={handleLogout}
           />
         } />
         <Route path="/user/:username" element={
