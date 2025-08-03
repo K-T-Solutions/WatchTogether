@@ -8,17 +8,27 @@ service UserService {
   // Get user by ID
   rpc GetUserById (UserIdRequestGrpc) returns (UserResponseGrpc) {}
 
+  // Update User Profile By ID
+  rpc UpdateUserProfileById (UpdateUserProfileRequestGrpc) returns (UserResponseGrpc) {}
+
 }
 
 message UserIdRequestGrpc {
-  string id = 1;        // user UUID
+  string userId = 1;        // user UUID
 }
 
 message UserResponseGrpc {
-  string id = 1;          // user UUID
+  string userId = 1;          // user UUID
   string login = 2;         // user login
   string displayName = 3;         // user displayName
   string bio = 4;         // user bio
   string displayEmail = 5;        // user email
   string joinDate = 6;        //user createdAt
+}
+
+message UpdateUserProfileRequestGrpc {
+  string userId = 1;
+  string displayName = 2;
+  string displayEmail = 3;
+  string bio = 4;
 }
