@@ -11,7 +11,7 @@ export default function UserProfile({ user, currentUser, onClose, onLogout }) {
 
   const handleAddFriend = () => {
     // Здесь будет логика добавления в друзья
-    alert(`Friend request sent to ${user.username}!`);
+    alert(`Friend request sent to ${user.displayName || user.username}!`);
   };
 
   return (
@@ -31,7 +31,7 @@ export default function UserProfile({ user, currentUser, onClose, onLogout }) {
         <div className="max-w-4xl mx-auto">
           {/* Заголовок страницы */}
           <div className="text-center mb-12">
-            <h1 className="text-white text-4xl font-bold mb-4">{user.username}'s Profile</h1>
+            <h1 className="text-white text-4xl font-bold mb-4">{user.displayName || user.username}'s Profile</h1>
             <p className="text-gray-400 text-lg">View user's profile and activity</p>
           </div>
 
@@ -74,12 +74,20 @@ export default function UserProfile({ user, currentUser, onClose, onLogout }) {
 
                 {/* Информация профиля */}
                 <div className="flex-1 space-y-6">
+                  {/* Display Name */}
+                  <div>
+                    <label className="block text-gray-400 text-sm font-medium mb-2">
+                      Display Name
+                    </label>
+                    <p className="text-white text-xl font-medium">{user.displayName || user.username}</p>
+                  </div>
+
                   {/* Username */}
                   <div>
                     <label className="block text-gray-400 text-sm font-medium mb-2">
                       Username
                     </label>
-                    <p className="text-white text-xl font-medium">{user.username}</p>
+                    <p className="text-white text-lg">@{user.username}</p>
                   </div>
 
                   {/* Email (если публичный) */}

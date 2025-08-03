@@ -3,10 +3,23 @@ import { Link } from "react-router-dom";
 import Header from "./Header";
 
 export default function Profile({ currentUser, onClose, onLogout, onViewUser }) {
+  // Если currentUser равен null, показываем сообщение о загрузке или перенаправляем
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-[#070710] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-white text-xl mb-4">Loading profile...</div>
+          <div className="text-gray-400">Please wait while we load your profile data.</div>
+        </div>
+      </div>
+    );
+  }
+
   const [isEditing, setIsEditing] = useState(false);
   const [isActivityVisible, setIsActivityVisible] = useState(true);
   const [formData, setFormData] = useState({
     username: currentUser.username,
+    displayName: currentUser.displayName || currentUser.username,
     email: currentUser.email,
     bio: currentUser.bio || "No bio yet...",
     avatar: currentUser.avatar
@@ -21,6 +34,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
   const handleCancel = () => {
     setFormData({
       username: currentUser.username,
+      displayName: currentUser.displayName || currentUser.username,
       email: currentUser.email,
       bio: currentUser.bio || "No bio yet...",
       avatar: currentUser.avatar
@@ -103,6 +117,25 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
 
                 {/* Информация профиля */}
                 <div className="flex-1 space-y-6">
+                  {/* Display Name */}
+                  <div>
+                    <label className="block text-gray-400 text-sm font-medium mb-2">
+                      Display Name
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="displayName"
+                        value={formData.displayName}
+                        onChange={handleInputChange}
+                        className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg"
+                        placeholder="Enter your display name..."
+                      />
+                    ) : (
+                      <p className="text-white text-xl font-medium">{currentUser.displayName || currentUser.username}</p>
+                    )}
+                  </div>
+
                   {/* Username */}
                   <div>
                     <label className="block text-gray-400 text-sm font-medium mb-2">
@@ -115,9 +148,10 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                         value={formData.username}
                         onChange={handleInputChange}
                         className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg"
+                        disabled
                       />
                     ) : (
-                      <p className="text-white text-xl font-medium">{currentUser.username}</p>
+                      <p className="text-white text-lg">@{currentUser.username}</p>
                     )}
                   </div>
 
@@ -206,8 +240,9 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                 {(currentUser.friends && currentUser.friends.length > 0) ? (
                   currentUser.friends.map((friend, idx) => (
                     <div key={idx} className="flex flex-col items-center bg-[#232346] rounded-lg p-4 w-32">
-                      <img src={friend.avatar} alt={friend.username} className="w-14 h-14 rounded-full mb-2 border-2 border-indigo-400" />
-                      <span className="text-white font-medium text-sm">{friend.username}</span>
+                      <img src={friend.avatar} alt={friend.displayName || friend.username} className="w-14 h-14 rounded-full mb-2 border-2 border-indigo-400" />
+                      <span className="text-white font-medium text-sm">{friend.displayName || friend.username}</span>
+                      <span className="text-gray-400 text-xs">@{friend.username}</span>
                       <button 
                         onClick={() => onViewUser(friend)}
                         className="mt-2 text-xs text-indigo-400 hover:underline hover:text-indigo-300 transition-colors"
