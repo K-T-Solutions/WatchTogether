@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+
+option java_package = "com.watchtogether.grpc";
+option java_outer_classname = "UserServiceProto";
+
+service UserService {
+  // Get user by ID
+  rpc GetUserById (UserIdRequestGrpc) returns (UserResponseGrpc) {}
+
+}
+
+message UserIdRequestGrpc {
+  string id = 1;        // user UUID
+}
+
+message UserResponseGrpc {
+  string id = 1;          // user UUID
+  string login = 2;         // user login
+  string displayName = 3;         // user displayName
+  string bio = 4;         // user bio
+  string displayEmail = 5;        // user email
+  string joinDate = 6;        //user createdAt
+}

@@ -30,6 +30,7 @@ public class UserProfileService implements IUserProfileService {
         UserProfileEntity userProfileEntity = new UserProfileEntity();
         userProfileEntity.setUserId(event.getUserId());
         userProfileEntity.setLogin(event.getLogin());
+        userProfileEntity.setDisplayName(event.getLogin());
         userProfileEntity.setDisplayEmail(event.getEmail());
         userProfileRepository.save(userProfileEntity);
     }

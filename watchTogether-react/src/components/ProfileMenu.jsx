@@ -21,6 +21,11 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
     onProfile();
   };
 
+  // Если currentUser равен null, не рендерим компонент
+  if (!currentUser) {
+    return null;
+  }
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -32,7 +37,7 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
           alt="Avatar" 
           className="w-8 h-8 rounded-full border-2 border-indigo-500"
         />
-        <span className="text-indigo-300">{currentUser.username}</span>
+        <span className="text-indigo-300">{currentUser.displayName}</span>
         <svg 
           className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
           fill="none" 
@@ -54,8 +59,8 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
                 className="w-12 h-12 rounded-full border-2 border-indigo-500"
               />
               <div>
-                <p className="text-white font-medium">{currentUser.username}</p>
-                <p className="text-gray-400 text-sm">{currentUser.email}</p>
+                <p className="text-white font-medium">{currentUser.displayName}</p>
+                <p className="text-gray-400 text-sm">@{currentUser.username}</p>
               </div>
             </div>
           </div>
