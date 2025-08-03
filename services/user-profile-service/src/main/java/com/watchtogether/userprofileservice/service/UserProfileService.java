@@ -40,6 +40,7 @@ public class UserProfileService implements IUserProfileService {
         return Optional.ofNullable(findUserProfileById(userId))
                 .map( u -> {
                     u.setDisplayName(request.getDisplayName());
+                    u.setDisplayEmail(request.getDisplayEmail());
                     u.setBio(request.getBio());
                     return userProfileRepository.save(u);
                 }).orElseThrow(() ->
