@@ -1,0 +1,35 @@
+server:
+  port: 4001
+
+logging:
+  level:
+    org.springframework: INFO
+    io.grpc: DEBUG
+
+spring:
+  application:
+    name: api-gateway
+
+  graphql:
+    graphiql:
+      enabled: true
+    schema:
+      printer:
+        enabled: true
+
+# gRPC клиент для связи с auth-service
+grpc:
+  client:
+    auth-service:
+      address: static://auth-service:9090
+      negotiationType: plaintext
+      enable-keep-alive: true
+      keep-alive-time: 30s
+      max-inbound-message-size: 16MB
+
+    room-service:
+      address: static://room-service:9090
+      negotiationType: plaintext
+      enable-keep-alive: true
+      keep-alive-time: 30s
+      max-inbound-message-size: 16MB

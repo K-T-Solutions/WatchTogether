@@ -1,0 +1,217 @@
+version: '3.8'
+
+services:
+
+  # Kafka and Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: wt-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: [ "CMD-SHELL", "echo ruok | nc localhost 2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: wt-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - watchtogether-network
+    healthcheck:
+      # Этот healthcheck может быть ненадежным, если еще нет топиков.
+      # Но с KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true' он, скорее всего, будет работать.
+      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+
+  # databases
+  auth-service-db:
+    image: postgres:15-alpine
+    container_name: wt-auth-service-db # Имя контейнера, как в вашем URL подключения
+    env_file:
+      - ./services/auth-service/db.env
+    ports:
+      - "5002:5432" # Проброс порта, как у вас было
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service-db:
+    image: postgres:15-alpine
+    container_name: wt-user-service-db # Имя контейнера, как в вашем URL подключения
+    env_file:
+      - ./services/user-profile-service/db.env
+    ports:
+      - "5003:5432" # Проброс порта, как у вас было
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin_user -d user_profile_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+#  postgres:
+#    image: postgres:15-alpine
+#    container_name: wt-postgres
+#    environment:
+#      POSTGRES_DB: watchtogether
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U postgres"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+
+
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: wt-api-gateway
+    ports:
+      - "4001:4001"
+    depends_on:
+      - auth-service
+      - user-profile-service
+      # - room-service # Раскомментируйте, когда добавите room-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: wt-auth-service
+    ports:
+      - "4002:4002" # HTTP/Actuator
+      - "9090:9090" # gRPC
+    depends_on:
+      auth-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file:
+      - ./services/auth-service/service.env
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  user-profile-service:
+    build:
+      context: ./services/user-profile-service
+      dockerfile: Dockerfile
+    container_name: wt-user-service
+    ports:
+      - "4003:4003" # HTTP/Actuator
+#      - "9090:9090" # gRPC
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file:
+      - ./services/user-profile-service/service.env
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+#  room-service:
+#    build:
+#      context: ./services/room-service
+#      dockerfile: Dockerfile
+#    container_name: wt-room-service
+#    ports:
+#      - "4004:4004" # HTTP/Actuator
+#      - "9090:9090" # gRPC
+#    depends_on:
+##      auth-service-db:
+##        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    env_file:
+#      - ./services/
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:4002/actuator/health" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+
+
+volumes:
+  postgres_data:
+  auth_db_data: # Новый том для данных auth-service-db
+  user_db_data:
+
+networks:
+  watchtogether-network:
+    driver: bridge

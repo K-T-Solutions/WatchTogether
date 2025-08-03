@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.watchtogether.grpc";
+option java_outer_classname = "RoomServiceProto";
+
+//package room;
+
+service RoomService {
+  // Получение комнаты по ID
+  rpc GetRoomById (RoomIdRequestGrpc) returns (RoomResponseGrpc) {}
+
+  // Получение всех комнат
+  rpc GetAllRooms (EmptyGrpc) returns (RoomListResponseGrpc) {}
+
+  // Получение комнат по категории
+  rpc GetRoomsByCategory (CategoryRequestGrpc) returns (RoomListResponseGrpc) {}
+
+  // Создание новой комнаты
+  rpc CreateRoom (CreateRoomRequestGrpc) returns (RoomResponseGrpc) {}
+
+  // Обновление существующей комнаты
+  rpc UpdateRoom (UpdateRoomRequestGrpc) returns (RoomResponseGrpc) {}
+}
+
+// ========== Основные модели ==========
+
+message RoomGrpc {
+  string id = 1;               // UUID комнаты
+  string name = 2;              // Название комнаты
+  string description = 3;       // Описание комнаты
+  RoomTypeGrpc type = 4;            // Тип комнаты
+  RoomCategoryGrpc category = 5;    // Категория комнаты
+  //  string password_hash = 6;     // Хеш пароля (опционально)
+  int32 max_participants = 6;   // Максимальное количество участников
+  string owner_id = 7;          // UUID владельца комнаты
+}
+
+enum RoomTypeGrpc {
+  PUBLIC = 0;     // Публичная комната
+  PRIVATE = 1;    // Приватная комната
+  //  PASSWORD = 2;   // Комната с паролем
+}
+
+enum RoomCategoryGrpc {
+  MOVIES = 0;
+  SERIES = 1;
+  ANIME = 2;
+  MUSIC = 3;
+  GAMING = 4;
+  EDUCATION = 5;
+  SPORTS = 6;
+  STAND_UP = 7;
+  KIDS = 8;
+  ART = 9;
+  TRAVEL = 10;
+  COOKING = 11;
+  FASHION = 12;
+  LIVE = 13;
+  TESTING = 14;
+  SOCIAL = 15;
+  OTHER = 16;
+  NONE = 17;      // Другое
+}
+
+// ========== Запросы и ответы ==========
+
+message RoomIdRequestGrpc {
+  string room_id = 1;  // UUID запрашиваемой комнаты
+}
+
+message CategoryRequestGrpc {
+  string category = 1;  // Название категории для фильтрации
+}
+
+message CreateRoomRequestGrpc {
+  string name = 1;
+  string description = 2;
+  RoomTypeGrpc type = 3;
+  RoomCategoryGrpc category = 4;
+  string password = 5;         // Пароль в открытом виде (для комнат с паролем)
+  int32 max_participants = 6;
+  string owner_id = 7;         // UUID создателя комнаты надо убрать
+}
+
+message UpdateRoomRequestGrpc {
+  string room_id = 1;
+  string name = 2;
+  string description = 3;
+  RoomTypeGrpc type = 4;
+  RoomCategoryGrpc category = 5;
+  string owner_id = 6;         // UUID пользователя, инициирующего обновление
+}
+
+message RoomResponseGrpc {
+  RoomGrpc room = 1;              // Основные данные комнаты
+  //  bool success = 2;           // Флаг успешности операции
+  //  string error_message = 3;   // Сообщение об ошибке (если success=false)
+}
+
+message RoomListResponseGrpc {
+  repeated RoomGrpc rooms = 1;    // Список комнат
+  //  bool success = 2;
+  //  string error_message = 3;
+}
+
+message EmptyGrpc {}

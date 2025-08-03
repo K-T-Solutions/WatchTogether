@@ -1,0 +1,292 @@
+version: '3.8'
+
+services:
+  # База данных PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: watchtogether-postgres
+    environment:
+      POSTGRES_DB: watchtogether
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka и Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: watchtogether-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: watchtogether-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: watchtogether-api-gateway
+    ports:
+      - "4001:4001"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      room-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: watchtogether-auth-service
+    ports:
+      - "4002:9090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/watchtogether
+#      SPRING_DATASOURCE_USERNAME: postgres
+#      SPRING_DATASOURCE_PASSWORD: postgres
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    env_file:
+      - ./services/auth-service/.env
+
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Room Service
+#  room-service:
+#    build:
+#      context: ./room-service
+#      dockerfile: Dockerfile
+#    container_name: watchtogether-room-service
+#    ports:
+#      - "4004:4004"
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/watchtogether
+#      SPRING_DATASOURCE_USERNAME: postgres
+#      SPRING_DATASOURCE_PASSWORD: postgres
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+#
+#  # Chat Service
+##  chat-service:
+##    build:
+##      context: ./chat-service
+##      dockerfile: Dockerfile
+##    container_name: watchtogether-chat-service
+##    ports:
+##      - "4002:8080"
+##    depends_on:
+##      postgres:
+##        condition: service_healthy
+##      kafka:
+##        condition: service_healthy
+##    environment:
+##      SPRING_PROFILES_ACTIVE: docker
+##      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/watchtogether
+##      SPRING_DATASOURCE_USERNAME: postgres
+##      SPRING_DATASOURCE_PASSWORD: postgres
+##      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+##    networks:
+##      - watchtogether-network
+##    healthcheck:
+##      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+##      interval: 30s
+##      timeout: 10s
+##      retries: 3
+##      start_period: 40s
+#
+#  # User Profile Service
+#  user-profile-service:
+#    build:
+#      context: ./user-profile-service
+#      dockerfile: Dockerfile
+#    container_name: watchtogether-user-profile-service
+#    ports:
+#      - "4003:4003"
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/watchtogether
+#      SPRING_DATASOURCE_USERNAME: postgres
+#      SPRING_DATASOURCE_PASSWORD: postgres
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:4003/actuator/health"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+
+  # Notification Service
+#  notification-service:
+#    build:
+#      context: ./notification-service
+#      dockerfile: Dockerfile
+#    container_name: watchtogether-notification-service
+#    ports:
+#      - "4004:8080"
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/watchtogether
+#      SPRING_DATASOURCE_USERNAME: postgres
+#      SPRING_DATASOURCE_PASSWORD: postgres
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+
+  # Social Service
+#  social-service:
+#    build:
+#      context: ./social-serivce
+#      dockerfile: Dockerfile
+#    container_name: watchtogether-social-service
+#    ports:
+#      - "4005:8080"
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/watchtogether
+#      SPRING_DATASOURCE_USERNAME: postgres
+#      SPRING_DATASOURCE_PASSWORD: postgres
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+
+  # React Frontend
+#  frontend:
+#    build:
+#      context: ./watchTogether-react
+#      dockerfile: Dockerfile
+#    container_name: watchtogether-frontend
+#    ports:
+#      - "3000:3000"
+#    depends_on:
+#      api-gateway:
+#        condition: service_healthy
+#    environment:
+#      VITE_API_URL: http://localhost:4001
+#    networks:
+#      - watchtogether-network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+
+volumes:
+  postgres_data:
+
+networks:
+  watchtogether-network:
+    driver: bridge 
