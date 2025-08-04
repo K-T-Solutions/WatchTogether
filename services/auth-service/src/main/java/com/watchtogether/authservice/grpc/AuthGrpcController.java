@@ -108,6 +108,19 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
     }
 
     @Override
+    public void updateEmail(AuthServiceProto.UpdateLoginRequestGrpc request, StreamObserver<AuthServiceProto.UpdateCredResponseGrpc> responseObserver) {
+        var userEntity = credentialsService.updateEmail(UUID.fromString(
+                request.getUserId()),
+                request.getLogin());
+        AuthServiceProto.UpdateCredResponseGrpc response = AuthServiceProto.UpdateCredResponseGrpc
+                .newBuilder()
+                .setMessage("Email updated success")
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void updatePassword(
             AuthServiceProto.UpdatePasswordRequestGrpc request,
             StreamObserver<AuthServiceProto.UpdateCredResponseGrpc> responseObserver

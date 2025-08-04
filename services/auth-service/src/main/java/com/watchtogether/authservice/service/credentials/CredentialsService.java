@@ -39,12 +39,13 @@ public class CredentialsService implements ICredentialsService {
         return Optional.ofNullable(getByUserId(userId)) //TODO: создавать 2fa сущность
                 .map(u -> {
                     u.setEmail(newEmail);
-//                    kafkaProducer.sendUpdateUserCredEvent(
-//                            UpdateUserCredEvent.builder()
-//                                    .userId(userId)
-//                                    .newLogin(u.getEmail())
-////                                    .credType("EMAIL")
-//                                    .build());
+                    u.setEmailVerified(false); //TODO: проверит ьтчо будет с 2FA
+                    kafkaProducer.sendUpdateUserCredEvent(
+                            UpdateUserCredEvent.builder()
+                                    .userId(userId)
+                                    .newLogin(u.getEmail())
+                                    .credType("EMAIL")
+                                    .build());
                     return repository.save(u);
                 }).orElseThrow(() ->
                         new UserNotFoundException("User with id " + userId + " not found"));
@@ -63,7 +64,7 @@ public class CredentialsService implements ICredentialsService {
                             UpdateUserCredEvent.builder()
                                     .userId(userId)
                                     .newLogin(u.getLogin())
-//                                    .credType("LOGIN")
+                                    .credType("LOGIN")
                                     .build());
                     return repository.save(u);
                 }).orElseThrow(() ->

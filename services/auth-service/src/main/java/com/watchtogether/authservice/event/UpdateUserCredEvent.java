@@ -12,5 +12,5 @@ import java.util.UUID;
 public class UpdateUserCredEvent {
     private UUID userId;
     private String newLogin; //TODO: подумать как назвать
-//    private String credType;
+    private String credType;
 }

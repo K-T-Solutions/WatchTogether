@@ -12,6 +12,11 @@ public class GlobalGrpcExceptionHandler {
         return Status.ALREADY_EXISTS.withDescription(e.getMessage()).withCause(e);
     }
 
+    @GrpcExceptionHandler(EmailAlreadyTakenException.class)
+    public Status handleEmailAlreadyTakenException(EmailAlreadyTakenException e) {
+        return Status.ALREADY_EXISTS.withDescription(e.getMessage()).withCause(e);
+    }
+
     @GrpcExceptionHandler(UserNotFoundException.class)
     public Status handleUserNotFoundException(UserNotFoundException e) {
         return Status.NOT_FOUND.withDescription(e.getMessage()).withCause(e);

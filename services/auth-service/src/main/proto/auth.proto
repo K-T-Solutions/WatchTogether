@@ -11,6 +11,8 @@ service AuthService {
 
   rpc UpdateLogin (UpdateLoginRequestGrpc) returns (UpdateCredResponseGrpc);
 
+  rpc UpdateEmail (UpdateLoginRequestGrpc) returns (UpdateCredResponseGrpc);
+
   rpc UpdatePassword (UpdatePasswordRequestGrpc) returns (UpdateCredResponseGrpc);
 
 }
