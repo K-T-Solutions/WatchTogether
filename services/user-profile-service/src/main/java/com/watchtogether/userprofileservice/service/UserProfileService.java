@@ -3,7 +3,7 @@ package com.watchtogether.userprofileservice.service;
 import com.watchtogether.userprofileservice.entity.NotificationPreferencesEntity;
 import com.watchtogether.userprofileservice.entity.UserProfileEntity;
 import com.watchtogether.userprofileservice.enums.PrivacyLevel;
-import com.watchtogether.userprofileservice.event.UpdateLoginEvent;
+import com.watchtogether.userprofileservice.event.UpdateUserCredEvent;
 import com.watchtogether.userprofileservice.exception.UserProfileNotFoundException;
 import com.watchtogether.userprofileservice.repostiory.UserProfileRepository;
 import com.watchtogether.userprofileservice.request.UpdateUserProfileRequest;
@@ -49,10 +49,20 @@ public class UserProfileService implements IUserProfileService {
     }
 
     @Override
-    public UserProfileEntity updateUserLoginById(UpdateLoginEvent event) {
+    public UserProfileEntity updateUserLoginById(UpdateUserCredEvent event) {
         return Optional.ofNullable(findUserProfileById(event.getUserId()))
                 .map(u -> {
                     u.setLogin(event.getNewLogin());
+                    return userProfileRepository.save(u);
+                }).orElseThrow(() ->
+                        new UserProfileNotFoundException("User profile with id " + event.getUserId() + " not found"));
+    }
+
+    @Override
+    public UserProfileEntity updateUserEmailById(UpdateUserCredEvent event) {
+        return Optional.ofNullable(findUserProfileById(event.getUserId()))
+                .map(u -> {
+                    u.setDisplayEmail(event.getNewLogin());
                     return userProfileRepository.save(u);
                 }).orElseThrow(() ->
                         new UserProfileNotFoundException("User profile with id " + event.getUserId() + " not found"));
