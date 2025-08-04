@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@apollo/client";
 import { GET_USER_PROFILE } from "../graphql/queries";
 import { getUserFromToken } from "../utils/jwt";
@@ -7,8 +7,8 @@ import Header from "./Header";
 
 export default function Profile({ currentUser, onClose, onLogout, onViewUser }) {
   // Все хуки должны быть в начале компонента
-  const [isEditing, setIsEditing] = useState(false);
   const [isActivityVisible, setIsActivityVisible] = useState(true);
+  const navigate = useNavigate();
   
   // Получаем ID пользователя из JWT токена
   const token = localStorage.getItem('authToken');
@@ -40,14 +40,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
   
 
 
-  // Инициализируем formData с безопасными значениями
-  const [formData, setFormData] = useState({
-    username: mergedUserData?.username || '',
-    displayName: mergedUserData?.displayName || mergedUserData?.username || '',
-    email: mergedUserData?.email || '',
-    bio: mergedUserData?.bio || "No bio yet...",
-    avatar: mergedUserData?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
-  });
+
 
   // Если currentUser равен null или данные загружаются, показываем сообщение о загрузке
   if (!currentUser || loading) {
@@ -80,29 +73,8 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
     );
   }
 
-  const handleSave = () => {
-    // Здесь будет логика сохранения изменений
-    setIsEditing(false);
-    // Можно добавить уведомление об успешном сохранении
-  };
-
-  const handleCancel = () => {
-    setFormData({
-      username: mergedUserData?.username || '',
-      displayName: mergedUserData?.displayName || mergedUserData?.username || '',
-      email: mergedUserData?.email || '',
-      bio: mergedUserData?.bio || "No bio yet...",
-      avatar: mergedUserData?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
-    });
-    setIsEditing(false);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleEditProfile = () => {
+    navigate('/settings');
   };
 
   return (
@@ -133,47 +105,47 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
               <div className="flex flex-col lg:flex-row gap-8">
                 {/* Аватар */}
                 <div className="flex flex-col items-center gap-4">
-                                     <div className="relative">
-                     <img 
-                       src={formData.avatar || mergedUserData?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
-                       alt="Avatar" 
-                       className="w-40 h-40 rounded-full border-4 border-indigo-500"
-                     />
-                    {isEditing && (
-                      <button className="absolute bottom-2 right-2 bg-indigo-500 hover:bg-indigo-600 text-white p-3 rounded-full transition-colors shadow-lg">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                    )}
+                  <div className="relative">
+                    <img 
+                      src={mergedUserData?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
+                      alt="Avatar" 
+                      className="w-40 h-40 rounded-full border-4 border-indigo-500"
+                    />
                   </div>
-                                     <div className="text-center">
-                     <p className="text-gray-400 text-sm">Member since</p>
-                     <p className="text-white font-medium">
-                       {(() => {
-                         try {
-                           return mergedUserData?.joinDate ? new Date(mergedUserData.joinDate).toLocaleDateString() : 'Unknown';
-                         } catch (e) {
-                           return 'Unknown';
-                         }
-                       })()}
-                     </p>
-                   </div>
-                                     {/* Социальные счетчики */}
-                   <div className="flex gap-6 mt-4">
-                     <div className="text-center">
-                       <p className="text-xl font-bold text-indigo-400">{mergedUserData?.friends?.length || 0}</p>
-                       <p className="text-gray-400 text-xs">Friends</p>
-                     </div>
-                     <div className="text-center">
-                       <p className="text-xl font-bold text-indigo-400">{mergedUserData?.followers || 0}</p>
-                       <p className="text-gray-400 text-xs">Followers</p>
-                     </div>
-                     <div className="text-center">
-                       <p className="text-xl font-bold text-indigo-400">{mergedUserData?.following || 0}</p>
-                       <p className="text-gray-400 text-xs">Following</p>
-                     </div>
-                   </div>
+                  <div className="text-center">
+                    <p className="text-gray-400 text-sm">Member since</p>
+                    <p className="text-white font-medium">
+                      {(() => {
+                        try {
+                          return mergedUserData?.joinDate ? new Date(mergedUserData.joinDate).toLocaleDateString() : 'Unknown';
+                        } catch (e) {
+                          return 'Unknown';
+                        }
+                      })()}
+                    </p>
+                  </div>
+                  {/* Кнопка Edit Profile */}
+                  <button
+                    onClick={handleEditProfile}
+                    className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition"
+                  >
+                    Edit Profile
+                  </button>
+                  {/* Социальные счетчики */}
+                  <div className="flex gap-6 mt-4">
+                    <div className="text-center">
+                      <p className="text-xl font-bold text-indigo-400">{mergedUserData?.friends?.length || 0}</p>
+                      <p className="text-gray-400 text-xs">Friends</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xl font-bold text-indigo-400">{mergedUserData?.followers || 0}</p>
+                      <p className="text-gray-400 text-xs">Followers</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xl font-bold text-indigo-400">{mergedUserData?.following || 0}</p>
+                      <p className="text-gray-400 text-xs">Following</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Информация профиля */}
@@ -183,18 +155,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                     <label className="block text-gray-400 text-sm font-medium mb-2">
                       Display Name
                     </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="displayName"
-                        value={formData.displayName}
-                        onChange={handleInputChange}
-                        className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg"
-                        placeholder="Enter your display name..."
-                      />
-                                         ) : (
-                       <p className="text-white text-xl font-medium">{mergedUserData?.displayName || mergedUserData?.username || 'Unknown'}</p>
-                     )}
+                    <p className="text-white text-xl font-medium">{mergedUserData?.displayName || mergedUserData?.username || 'Unknown'}</p>
                   </div>
 
                   {/* Username */}
@@ -202,18 +163,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                     <label className="block text-gray-400 text-sm font-medium mb-2">
                       Username
                     </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="username"
-                        value={formData.username}
-                        onChange={handleInputChange}
-                        className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg"
-                        disabled
-                      />
-                                         ) : (
-                       <p className="text-white text-lg">@{mergedUserData?.username || 'unknown'}</p>
-                     )}
+                    <p className="text-white text-lg">@{mergedUserData?.username || 'unknown'}</p>
                   </div>
 
                   {/* Email */}
@@ -221,17 +171,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                     <label className="block text-gray-400 text-sm font-medium mb-2">
                       Email
                     </label>
-                    {isEditing ? (
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg"
-                      />
-                                         ) : (
-                       <p className="text-white text-lg">{mergedUserData?.email || 'No email'}</p>
-                     )}
+                    <p className="text-white text-lg">{mergedUserData?.email || 'No email'}</p>
                   </div>
 
                   {/* Bio */}
@@ -239,18 +179,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                     <label className="block text-gray-400 text-sm font-medium mb-2">
                       Bio
                     </label>
-                    {isEditing ? (
-                      <textarea
-                        name="bio"
-                        value={formData.bio}
-                        onChange={handleInputChange}
-                        rows="4"
-                        className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-lg"
-                        placeholder="Tell us about yourself..."
-                      />
-                                         ) : (
-                       <p className="text-white text-lg">{mergedUserData?.bio || "No bio yet..."}</p>
-                     )}
+                    <p className="text-white text-lg">{mergedUserData?.bio || "No bio yet..."}</p>
                   </div>
                 </div>
               </div>
@@ -318,39 +247,16 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
               </div>
             </div>
 
-            {/* Кнопки действий */}
+            {/* Кнопка Log Out */}
             <div className="p-8 border-t border-[#232346]">
-              {isEditing ? (
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleSave}
-                    className="flex-1 bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-4 rounded-lg hover:opacity-90 transition text-lg"
-                  >
-                    Save Changes
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="px-8 py-4 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition text-lg"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex-1 bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-4 rounded-lg hover:opacity-90 transition text-lg"
-                  >
-                    Edit Profile
-                  </button>
-                  <button
-                    onClick={onLogout}
-                    className="px-8 py-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition text-lg"
-                  >
-                    Log Out
-                  </button>
-                </div>
-              )}
+              <div className="flex gap-4">
+                <button
+                  onClick={onLogout}
+                  className="px-8 py-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition text-lg"
+                >
+                  Log Out
+                </button>
+              </div>
             </div>
           </div>
         </div>

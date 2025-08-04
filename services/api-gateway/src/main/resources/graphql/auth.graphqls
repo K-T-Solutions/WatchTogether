@@ -6,6 +6,11 @@ type Query {
 type Mutation {
     register(login: String!, email: String!, password: String!): RegisterResponse!
     login(username: String!, password: String!): LoginResponse!
+
+    updateUserLogin(userId: ID!, newLogin: String!): UpdateUserCredResponse!
+
+    updateUserPassword(userId: ID!, oldPass: String!, newPass: String!): UpdateUserCredResponse!
+
 }
 
 type LoginResponse {
@@ -16,5 +21,9 @@ type LoginResponse {
 type RegisterResponse {
     result: Boolean!
     message: String
+}
+
+type UpdateUserCredResponse {
+    message: String!
 }
 

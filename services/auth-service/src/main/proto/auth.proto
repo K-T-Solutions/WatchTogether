@@ -8,6 +8,11 @@ service AuthService {
   rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
   rpc Authenticate (LoginRequest) returns (AuthenticateResponse);
   rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  rpc UpdateLogin (UpdateLoginRequestGrpc) returns (UpdateCredResponseGrpc);
+
+  rpc UpdatePassword (UpdatePasswordRequestGrpc) returns (UpdateCredResponseGrpc);
+
 }
 
 message RegisterRequest {
@@ -36,5 +41,20 @@ message ValidateTokenRequest {
 
 message ValidateTokenResponse {
   bool is_valid = 1;
+}
+
+message UpdateLoginRequestGrpc {
+  string userId = 1;
+  string login = 2;
+}
+
+message UpdatePasswordRequestGrpc {
+  string userId = 1;
+  string oldPass = 2;
+  string newPass = 3;
+}
+
+message UpdateCredResponseGrpc {
+  string message = 1;
 }
 
