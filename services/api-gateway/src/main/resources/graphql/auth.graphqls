@@ -9,6 +9,8 @@ type Mutation {
 
     updateUserLogin(userId: ID!, newLogin: String!): UpdateUserCredResponse!
 
+    updateUserEmail(userId: ID!, newLogin: String!): UpdateUserCredResponse!
+
     updateUserPassword(userId: ID!, oldPass: String!, newPass: String!): UpdateUserCredResponse!
 
 }

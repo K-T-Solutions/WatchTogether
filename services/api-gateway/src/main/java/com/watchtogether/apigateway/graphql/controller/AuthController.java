@@ -63,6 +63,26 @@ public class AuthController {
     }
 
     @MutationMapping
+    public UpdateUserCredResponse updateUserEmail(@Argument UUID userId, @Argument String newLogin) { //TODO: refactor
+        try {
+            var response = authGrpcClient.updateUserEmail(userId.toString(), newLogin);
+            return new UpdateUserCredResponse(response.getMessage());
+        } catch (Exception e) {
+            // Обрабатываем gRPC ошибки
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("ALREADY_EXISTS")) {
+                return new UpdateUserCredResponse("This email is already taken");
+            } else if (errorMessage.contains("NOT_FOUND")) {
+                return new UpdateUserCredResponse("User not found");
+            } else if (errorMessage.contains("ABORTED")) {
+                return new UpdateUserCredResponse("Invalid credentials");
+            } else {
+                return new UpdateUserCredResponse("Error updating email: " + errorMessage);
+            }
+        }
+    }
+
+    @MutationMapping
     public UpdateUserCredResponse updateUserPassword(@Argument UUID userId, @Argument String oldPass, @Argument String newPass) {
         try {
             var response = authGrpcClient.updateUserPassword(userId.toString(), oldPass, newPass);

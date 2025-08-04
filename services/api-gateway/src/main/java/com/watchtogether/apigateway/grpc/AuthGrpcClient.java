@@ -49,6 +49,15 @@ public class AuthGrpcClient {
         return blockingStub.updateLogin(requestGrpc);
     }
 
+    public AuthServiceProto.UpdateCredResponseGrpc updateUserEmail(String userId, String email) {
+        AuthServiceProto.UpdateLoginRequestGrpc requestGrpc = AuthServiceProto.UpdateLoginRequestGrpc
+                .newBuilder()
+                .setUserId(userId)
+                .setLogin(email)
+                .build();
+        return blockingStub.updateEmail(requestGrpc);
+    }
+
     public AuthServiceProto.UpdateCredResponseGrpc updateUserPassword(String userId, String oldPass, String newPass) {
         AuthServiceProto.UpdatePasswordRequestGrpc request = AuthServiceProto.UpdatePasswordRequestGrpc
                 .newBuilder()
