@@ -3,12 +3,14 @@ package com.watchtogether.authservice.service.credentials;
 import com.watchtogether.authservice.entity.AuthCredentialsEntity;
 import com.watchtogether.authservice.event.UpdateUserCredEvent;
 import com.watchtogether.authservice.exception.EmailAlreadyTakenException;
+import com.watchtogether.authservice.exception.InvalidCredentialsException;
 import com.watchtogether.authservice.exception.LoginAlreadyTakenException;
 import com.watchtogether.authservice.exception.UserNotFoundException;
 import com.watchtogether.authservice.kafka.KafkaProducer;
 import com.watchtogether.authservice.repository.AuthCredentialsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class CredentialsService implements ICredentialsService {
     private final AuthCredentialsRepository repository;
     private final KafkaProducer kafkaProducer;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public AuthCredentialsEntity getByUserId(UUID userId) {
@@ -36,12 +39,12 @@ public class CredentialsService implements ICredentialsService {
         return Optional.ofNullable(getByUserId(userId))
                 .map(u -> {
                     u.setEmail(newEmail);
-                    kafkaProducer.sendUpdateUserCredEvent(
-                            UpdateUserCredEvent.builder()
-                                    .userId(userId)
-                                    .newLogin(u.getEmail())
-                                    .credType("EMAIL")
-                                    .build());
+//                    kafkaProducer.sendUpdateUserCredEvent(
+//                            UpdateUserCredEvent.builder()
+//                                    .userId(userId)
+//                                    .newLogin(u.getEmail())
+////                                    .credType("EMAIL")
+//                                    .build());
                     return repository.save(u);
                 }).orElseThrow(() ->
                         new UserNotFoundException("User with id " + userId + " not found"));
@@ -60,18 +63,24 @@ public class CredentialsService implements ICredentialsService {
                             UpdateUserCredEvent.builder()
                                     .userId(userId)
                                     .newLogin(u.getLogin())
-                                    .credType("LOGIN")
+//                                    .credType("LOGIN")
                                     .build());
                     return repository.save(u);
                 }).orElseThrow(() ->
                         new UserNotFoundException("User with id " + userId + " not found"));
     }
 
-//    public AuthCredentialsEntity updatePassword(UpdatePasswordRequest request) {
-//        Optional.ofNullable(getByUserId(request.getUserId()))
-//                .filter()
-//    }
-
-
+    @Override
+    public AuthCredentialsEntity updatePassword(UUID userId, String oldPassword, String newPassword) {
+        return Optional.ofNullable(getByUserId(userId))
+                .filter(u -> passwordEncoder.matches(
+                        oldPassword,
+                        u.getPasswordHash()
+                )).map(u -> {
+                    u.setPasswordHash(passwordEncoder.encode(newPassword));
+                    return repository.save(u);
+                }).orElseThrow(() ->
+                        new InvalidCredentialsException("Invalid password"));
+    }
 
 }

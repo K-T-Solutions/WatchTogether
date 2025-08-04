@@ -60,7 +60,7 @@ public class AuthService implements IAuthService { //TODO: add change password f
                         u.getPasswordHash()))
                 .map(u -> jwtUtils.generateJwtToken(
                         u.getId(),
-                        u.getLogin())); //TODO: check here
+                        u.getLogin())); //TODO: check here + add exception
 
         return token;
     }

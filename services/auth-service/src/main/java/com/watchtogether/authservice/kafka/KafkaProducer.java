@@ -35,7 +35,7 @@ public class KafkaProducer {
         }
     }
 
-    public void sendUpdateUserCredEvent(UpdateUserCredEvent event) {
+    public void sendUpdateUserCredEvent(UpdateUserCredEvent event) { //TODO: change to login
 
         try {
             byte[] eventBytes = objectMapper.writeValueAsBytes(event);

@@ -3,10 +3,11 @@ package com.watchtogether.userprofileservice.service;
 import com.watchtogether.userprofileservice.entity.NotificationPreferencesEntity;
 import com.watchtogether.userprofileservice.entity.UserProfileEntity;
 import com.watchtogether.userprofileservice.enums.PrivacyLevel;
+import com.watchtogether.userprofileservice.event.UpdateLoginEvent;
 import com.watchtogether.userprofileservice.exception.UserProfileNotFoundException;
 import com.watchtogether.userprofileservice.repostiory.UserProfileRepository;
 import com.watchtogether.userprofileservice.request.UpdateUserProfileRequest;
-import com.watchtogether.userprofileservice.request.UserRegisterEvent;
+import com.watchtogether.userprofileservice.event.UserRegisterEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +31,7 @@ public class UserProfileService implements IUserProfileService {
         UserProfileEntity userProfileEntity = new UserProfileEntity();
         userProfileEntity.setUserId(event.getUserId());
         userProfileEntity.setLogin(event.getLogin());
+        userProfileEntity.setDisplayName(event.getLogin());
         userProfileEntity.setDisplayEmail(event.getEmail());
         userProfileRepository.save(userProfileEntity);
     }
@@ -39,10 +41,21 @@ public class UserProfileService implements IUserProfileService {
         return Optional.ofNullable(findUserProfileById(userId))
                 .map( u -> {
                     u.setDisplayName(request.getDisplayName());
+                    u.setDisplayEmail(request.getDisplayEmail());
                     u.setBio(request.getBio());
                     return userProfileRepository.save(u);
                 }).orElseThrow(() ->
                         new UserProfileNotFoundException("User profile with id " + userId + " not found"));
+    }
+
+    @Override
+    public UserProfileEntity updateUserLoginById(UpdateLoginEvent event) {
+        return Optional.ofNullable(findUserProfileById(event.getUserId()))
+                .map(u -> {
+                    u.setLogin(event.getNewLogin());
+                    return userProfileRepository.save(u);
+                }).orElseThrow(() ->
+                        new UserProfileNotFoundException("User profile with id " + event.getUserId() + " not found"));
     }
 
     @Override

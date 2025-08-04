@@ -1,0 +1,32 @@
+# user-profile.graphqls
+
+extend type Query {
+    # Get User Profile By Id
+    getUserProfileById(userId: ID!): UserProfileResponse
+
+}
+
+extend type Mutation {
+    #Update User Public Profile
+    updateUserProfileById(request: UpdateUserProfileRequest!): UserProfileResponse
+
+}
+
+
+# ========== Main Types ==========
+
+type UserProfileResponse {
+    id: ID
+    login: String
+    displayName: String
+    bio: String
+    displayEmail: String
+    joinDate: String
+}
+
+input UpdateUserProfileRequest {
+    userId: ID
+    displayName: String
+    displayEmail: String
+    bio: String
+}

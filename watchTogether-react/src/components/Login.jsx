@@ -1,28 +1,89 @@
-import {useState} from "react";
+import { useState } from "react";
+import { useMutation } from '@apollo/client';
+import { LOGIN_MUTATION } from '../graphql/auth';
+import { getUserFromToken } from '../utils/jwt';
 
 export default function Login({onSwitchToRegister, onClose, onLogin}) {
-    const [user, setUser] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const [loginMutation] = useMutation(LOGIN_MUTATION);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!user || !password) {
+        if (!username || !password) {
             setError("Please fill in all fields");
             return;
         }
         setError("");
+        setIsLoading(true);
 
-        // Имитация успешного входа
-        const userData = {
-            username: user,
-            email: user.includes('@') ? user : `${user}@example.com`,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user}`,
-            id: Date.now()
-        };
+        try {
+            const { data } = await loginMutation({
+                variables: {
+                    username: username,
+                    password: password
+                }
+            });
 
-        onLogin(userData);
+            if (data.login.token) {
+                // Сохраняем токен в localStorage
+                localStorage.setItem('authToken', data.login.token);
+                
+                // Получаем данные пользователя из токена
+                const userData = getUserFromToken(data.login.token);
+                
+                if (userData) {
+                    // Добавляем дополнительные данные пользователя
+                    const fullUserData = {
+                        ...userData,
+                        displayName: userData.username, // Используем username как начальное displayName
+                        email: username.includes('@') ? username : `${username}@example.com`,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
+                        friends: [
+                            { 
+                                username: 'Alice', 
+                                displayName: 'Alice Johnson',
+                                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Alice`,
+                                id: Date.now() + 1,
+                                bio: "Movie enthusiast and coffee lover",
+                                followers: 8,
+                                following: 15,
+                                publicEmail: false,
+                                publicFriends: true
+                            },
+                            { 
+                                username: 'Bob', 
+                                displayName: 'Bob Smith',
+                                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Bob`,
+                                id: Date.now() + 2,
+                                bio: "Gaming and streaming fanatic",
+                                followers: 23,
+                                following: 12,
+                                publicEmail: true,
+                                publicFriends: false
+                            }
+                        ],
+                        followers: 12,
+                        following: 7
+                    };
+                    
+                    onLogin(fullUserData);
+                } else {
+                    setError("Invalid token received");
+                }
+            } else {
+                setError(data.login.message || "Login failed");
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setError(error.message || "An error occurred during login");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -33,8 +94,9 @@ export default function Login({onSwitchToRegister, onClose, onLogin}) {
                 type="text"
                 placeholder="Username or Email"
                 className="p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={user}
-                onChange={e => setUser(e.target.value)}
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                disabled={isLoading}
             />
             <div className="relative">
                 <input
@@ -43,22 +105,26 @@ export default function Login({onSwitchToRegister, onClose, onLogin}) {
                     className="p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full pr-12"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
+                    disabled={isLoading}
                 />
                 <button
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400 hover:cursor-pointer text-sm"
                     tabIndex={-1}
                     onClick={() => setShowPassword(v => !v)}
+                    disabled={isLoading}
                 >
                     {showPassword ? "Hide" : "Show"}
                 </button>
             </div>
             {error && <div className="text-red-400 text-sm text-center">{error}</div>}
 
-            {/*<button type="submit" className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-2 rounded hover:opacity-90 transition">Sign In</button>*/}
-            <button type="submit"
-                    className="bg-gradient-to-tr from-[#4063bd] to-[#e8652d] text-white font-bold py-2 rounded hover:opacity-90 hover:cursor-pointer transition">Sign
-                In
+            <button 
+                type="submit"
+                disabled={isLoading}
+                className="bg-gradient-to-tr from-[#4063bd] to-[#e8652d] text-white font-bold py-2 rounded hover:opacity-90 hover:cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isLoading ? "Signing In..." : "Sign In"}
             </button>
             <div className="text-gray-400 text-sm text-center">
                 Don't have an account? <button type="button" className="text-indigo-400 hover:underline hover:cursor-pointer"

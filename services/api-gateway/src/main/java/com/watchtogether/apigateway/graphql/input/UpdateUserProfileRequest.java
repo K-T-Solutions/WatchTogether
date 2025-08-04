@@ -1,4 +1,4 @@
-package com.watchtogether.userprofileservice.request;
+package com.watchtogether.apigateway.graphql.input;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,7 +10,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateUserProfileRequest {
-    String displayName;
-    String displayEmail;
-    String bio;
+    private String userId;
+    private String displayName;
+    private String displayEmail;
+    private String bio;
 }
