@@ -2,6 +2,10 @@ package com.watchtogether.authservice.entity;
 
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
@@ -9,6 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "two_factor_auth")
 public class TwoFactorAuth {
@@ -22,8 +30,11 @@ public class TwoFactorAuth {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private AuthCredentialsEntity user;
 
-    @Column(nullable = false)
-    private String secretKey; // Для TOTP
+//    @Column(nullable = false)
+//    private String secretKey; // Для TOTP
+
+
+//    private VerificationCodeEntity verificationCode;
 
     @ElementCollection
     @CollectionTable(name = "two_factor_recovery_codes", joinColumns = @JoinColumn(name = "two_factor_auth_id"))
@@ -32,6 +43,7 @@ public class TwoFactorAuth {
 
     @Column(nullable = false)
     private boolean enabled = false;
+
 
     private LocalDateTime lastUsed;
 

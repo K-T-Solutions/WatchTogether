@@ -42,7 +42,7 @@ public class AuthCredentialsEntity {
     private List<VerificationCodeEntity> verificationTokens = new ArrayList<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private TwoFactorAuth twoFactorAuth;
+    private TwoFactorAuth twoFactorAuth; // когда почта подтверждается создавать поле
 
     @CreationTimestamp
     private LocalDateTime createdAt;

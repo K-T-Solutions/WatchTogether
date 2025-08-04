@@ -36,7 +36,7 @@ public class CredentialsService implements ICredentialsService {
             throw new EmailAlreadyTakenException("This email already exists");
         }
 
-        return Optional.ofNullable(getByUserId(userId))
+        return Optional.ofNullable(getByUserId(userId)) //TODO: создавать 2fa сущность
                 .map(u -> {
                     u.setEmail(newEmail);
 //                    kafkaProducer.sendUpdateUserCredEvent(
