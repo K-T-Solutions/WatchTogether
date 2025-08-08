@@ -34,19 +34,6 @@ public class TwoFactorAuthService implements ITwoFactorAuthService {
     /** A cryptographically strong random number generator. */
     private static final SecureRandom random = new SecureRandom();
 
-    /*
-     * Commented out mail sending logic for future implementation.
-     *
-     * private final MailSender mailSender;
-     * private final String VERIFICATION_CODE_SUBJECT = "Your Verification Code";
-     *
-     * public void sendVerificationCode(UUID userId, String emailTo) {
-     *     String code = generateOtpCode();
-     *     // Logic to save the hashed OTP code to the database with an expiration time
-     *     mailSender.send(emailTo, VERIFICATION_CODE_SUBJECT, code);
-     * }
-     */
-
     /**
      * {@inheritDoc}
      */
@@ -72,18 +59,6 @@ public class TwoFactorAuthService implements ITwoFactorAuthService {
 
 //         credentialsService.save(userEntity); // Assuming you need to save the updated entity
     }
-
-    /**
-     * Generates a 6-digit One-Time Password (OTP) for email or SMS verification.
-     *
-     * @return A string representing the 6-digit code.
-     */
-    private String generateOtpCode() {
-        // Generates a number between 100000 and 999999
-        int code = 100000 + random.nextInt(900000);
-        return String.valueOf(code);
-    }
-
 
     /**
      * Generates and returns a list of unique, formatted recovery codes.
