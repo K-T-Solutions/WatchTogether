@@ -1,4 +1,4 @@
-package com.watchtogether.authservice.service.VerificationToken;
+package com.watchtogether.authservice.service.Otp;
 
 import com.watchtogether.authservice.service.TwoFactorAuth.MailSender;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class OtpService implements IOtpService {
     private static final SecureRandom random = new SecureRandom();
 
     @Override
-    public void initiateLoginVerification(String email) {
+    public void initiateVerification(String email) {
         String code = generateOtpCode();
         storeOtp(email, code);
         mailSender.send(email, OTP_CODE_SUBJECT, code);
