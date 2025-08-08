@@ -50,6 +50,23 @@ services:
       timeout: 10s
       retries: 5
 
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: wt-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
   # databases
   auth-service-db:
@@ -119,9 +136,12 @@ services:
     depends_on:
       - auth-service
       - user-profile-service
+      - redis
       # - room-service # Раскомментируйте, когда добавите room-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     networks:
       - watchtogether-network
     healthcheck:
@@ -146,8 +166,12 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - ./services/auth-service/service.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
     networks:
       - watchtogether-network
     healthcheck:
@@ -170,8 +194,14 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - ./services/user-profile-service/service.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     networks:
       - watchtogether-network
     healthcheck:
@@ -210,6 +240,7 @@ volumes:
   postgres_data:
   auth_db_data: # Новый том для данных auth-service-db
   user_db_data:
+  redis_data:
 
 networks:
   watchtogether-network:
