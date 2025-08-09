@@ -9,9 +9,9 @@ export const LOGIN_MUTATION = gql`
   }
 `;
 
-export const VALIDATE_OTP_MUTATION = gql`
-  mutation ValidateOtp($email: String!, $code: String!) {
-    validateOtp(email: $email, code: $code) {
+export const VALIDATE_OTP_QUERY = gql`
+  query ValidateOtp($login: String!, $code: String!) {
+    validateOtp(login: $login, code: $code) {
       twoFactorRequired
       token
     }
@@ -29,13 +29,13 @@ export const REGISTER_MUTATION = gql`
 
 export const VALIDATE_TOKEN_QUERY = gql`
   query ValidateToken($token: String!) {
-    validateToken(token: $token)
+    validateJwtToken(token: $token)
   }
 `; 
 
 export const GET_USER_CRED_QUERY = gql`
   query GetUserCred($userId: ID!) {
-    getUserCred(userId: $userId) {
+    getUserCredentials(userId: $userId) {
       emailVerified
       login
       email
@@ -55,12 +55,12 @@ export const ENABLE_TWO_FACTOR_MUTATION = gql`
 
 export const SEND_EMAIL_VERIFICATION_CODE = gql`
   query SendEmailVerificationCode($userId: ID!) {
-    sendEmailVerificationCode(userId: $userId)
+    initiateEmailVerification(userId: $userId)
   }
 `;
 
 export const VERIFY_EMAIL_CODE = gql`
   query VerifyEmailCode($userId: ID!, $code: String!) {
-    verifyEmailCode(userId: $userId, code: $code)
+    finishEmailVerification(userId: $userId, code: $code)
   }
 `;

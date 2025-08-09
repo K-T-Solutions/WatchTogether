@@ -1,108 +1,103 @@
 syntax = "proto3";
 
+package watchtogether.auth.v1;
 
 option java_package = "com.watchtogether.grpc";
 option java_outer_classname = "AuthServiceProto";
 
 service AuthService {
-
-  rpc RegisterUser (RegisterRequestGrpc) returns (RegisterResponseGrpc);
-
-  rpc Login (LoginRequestGrpc) returns (AuthenticateResponseGrpc);
-
-  rpc ValidateOtp (VerificationRequestGrpc) returns (AuthenticateResponseGrpc);
-
-  rpc ValidateJwtToken (ValidateTokenRequestGrpc) returns (ValidateTokenResponseGrpc);
-
-  rpc UpdateLogin (UpdateLoginRequestGrpc) returns (UpdateCredResponseGrpc);
-
-  rpc UpdateEmail (UpdateLoginRequestGrpc) returns (UpdateCredResponseGrpc);
-
-  rpc UpdatePassword (UpdatePasswordRequestGrpc) returns (UpdateCredResponseGrpc);
-
-  rpc SendEmailVerificationCode (AuthUserIdRequestGrpc) returns (VerifyEmailResponseGrpc); //TODO: проблема имен (завтра отрефакторить жестко)
-
-  rpc VerifyEmailCode (VerifyEmailRequestGrpc) returns (VerifyEmailResponseGrpc);
-
-  rpc GetUser (AuthUserIdRequestGrpc) returns (UserCredResponseGrpc);
-
-  rpc EnableTwoFactor (AuthUserIdRequestGrpc) returns (EnableTwoFactorResponseGrpc);
-
+  rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
+  rpc Login (LoginRequest) returns (AuthenticateResponse);
+  rpc ValidateOtp (VerificationRequest) returns (AuthenticateResponse);
+  rpc ValidateJwtToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc UpdateLogin (UpdateLoginRequest) returns (UpdateCredResponse);
+  rpc UpdateEmail (UpdateEmailRequest) returns (UpdateCredResponse);
+  rpc UpdatePassword (UpdatePasswordRequest) returns (UpdateCredResponse);
+  rpc InitiateEmailVerification (UserIdRequest) returns (VerifyEmailResponse);
+  rpc FinishEmailVerification (VerifyEmailRequest) returns (VerifyEmailResponse);
+  rpc GetUserCredentials (UserIdRequest) returns (UserCredResponse);
+  rpc EnableTwoFactor (UserIdRequest) returns (EnableTwoFactorResponse);
 }
 
-message RegisterRequestGrpc {
+message RegisterRequest {
   string login = 1;
   string email = 2;
   string password = 3;
 }
 
-message RegisterResponseGrpc {
+message RegisterResponse {
   bool success = 1;
   string message = 2;
 }
 
-message LoginRequestGrpc {
-  string identifier = 1; // Может быть логином или email
+message LoginRequest {
+  // Identifier can be login or email
+  string identifier = 1;
   string password = 2;
 }
 
-message VerificationRequestGrpc {
-  string email = 1;
+message VerificationRequest {
+  string login = 1;
   string code = 2;
 }
 
-message AuthenticateResponseGrpc {
+message AuthenticateResponse {
   oneof response_type {
     string token = 1;
     bool two_factor_required = 2;
   }
 }
 
-message ValidateTokenRequestGrpc {
+message ValidateTokenRequest {
   string token = 1;
 }
 
-message ValidateTokenResponseGrpc {
+message ValidateTokenResponse {
   bool is_valid = 1;
 }
 
-message UpdateLoginRequestGrpc {
-  string userId = 1;
+message UpdateLoginRequest {
+  string user_id = 1;
   string login = 2;
 }
 
-message UpdatePasswordRequestGrpc {
-  string userId = 1;
-  string oldPass = 2;
-  string newPass = 3;
+message UpdateEmailRequest {
+  string user_id = 1;
+  string email = 2;
 }
 
-message UpdateCredResponseGrpc {
+message UpdatePasswordRequest {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message UpdateCredResponse {
   string message = 1;
 }
 
-message AuthUserIdRequestGrpc {
-  string userId = 1;
+message UserIdRequest {
+  string user_id = 1;
 }
 
-message VerifyEmailRequestGrpc {
-  string userId = 1;
+message VerifyEmailRequest {
+  string user_id = 1;
   string code = 2;
 }
 
-message VerifyEmailResponseGrpc {
+message VerifyEmailResponse {
   bool result = 1;
 }
 
-message UserCredResponseGrpc {
+message UserCredResponse {
   string login = 1;
   string email = 2;
-  bool emailVerified = 3;
+  bool email_verified = 3;
   bool enabled = 4;
-  string createdAt = 5;
+  string created_at = 5;
 }
 
-message EnableTwoFactorResponseGrpc {
+message EnableTwoFactorResponse {
   bool result = 1;
   string message = 2;
 }

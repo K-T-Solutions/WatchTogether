@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { useMutation } from '@apollo/client';
-import { VALIDATE_OTP_MUTATION } from '../graphql/auth';
+import { useLazyQuery } from '@apollo/client';
+import { VALIDATE_OTP_QUERY } from '../graphql/auth';
 import { getGraphQLErrorMessage } from '../utils/apollo';
 import { getUserFromToken } from '../utils/jwt';
 
-export default function OtpInput({ email, onBack, onLogin, onClose }) {
+export default function OtpInput({ identifier, email, onBack, onLogin, onClose }) {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const inputRefs = useRef([]);
 
-    const [validateOtpMutation] = useMutation(VALIDATE_OTP_MUTATION);
+    const [runValidateOtp] = useLazyQuery(VALIDATE_OTP_QUERY, { fetchPolicy: 'no-cache' });
 
     useEffect(() => {
         // Фокусируемся на первом поле при монтировании
@@ -50,23 +50,34 @@ export default function OtpInput({ email, onBack, onLogin, onClose }) {
             return;
         }
 
+        // login required (login or email)
+        if (!identifier) {
+            setError("Cannot validate code: identifier is missing. Please login again.");
+            return;
+        }
+
         setError("");
         setIsLoading(true);
 
         try {
-            const { data } = await validateOtpMutation({
+            const { data, error: gqlError } = await runValidateOtp({
                 variables: {
-                    email: email,
+                    login: identifier,
                     code: otpCode
                 }
             });
 
-            if (data.validateOtp.token) {
+            if (gqlError) {
+                throw gqlError;
+            }
+
+            const token = data?.validateOtp?.token;
+            if (token) {
                 // Сохраняем токен в localStorage
-                localStorage.setItem('authToken', data.validateOtp.token);
+                localStorage.setItem('authToken', token);
                 
                 // Получаем данные пользователя из токена
-                const userData = getUserFromToken(data.validateOtp.token);
+                const userData = getUserFromToken(token);
                 
                 if (userData) {
                     // Добавляем дополнительные данные пользователя

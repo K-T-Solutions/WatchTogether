@@ -28,30 +28,12 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
     private final ITwoFactorAuthService twoFactorAuthService;
     private final IOtpService otpService;
 
-    private void requireNonBlank(String value, String fieldName) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " must not be blank");
-        }
-    }
-
-    private UUID parseUuid(String rawUserId) {
-        requireNonBlank(rawUserId, "userId");
-        try {
-            return UUID.fromString(rawUserId);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("userId must be a valid UUID");
-        }
-    }
-
     @Override
     public void registerUser(
-            AuthServiceProto.RegisterRequestGrpc request,
-            StreamObserver<AuthServiceProto.RegisterResponseGrpc> responseObserver
+            AuthServiceProto.RegisterRequest request,
+            StreamObserver<AuthServiceProto.RegisterResponse> responseObserver
     ) {
-        log.info("Registering user");
-
-        AuthServiceProto.RegisterResponseGrpc response;
-
+        AuthServiceProto.RegisterResponse response;
         try {
             requireNonBlank(request.getLogin(), "login");
             requireNonBlank(request.getEmail(), "email");
@@ -62,12 +44,12 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
                             request.getEmail(),
                             request.getPassword()));
 
-            response = AuthServiceProto.RegisterResponseGrpc.newBuilder()
+            response = AuthServiceProto.RegisterResponse.newBuilder()
                     .setSuccess(true)
                     .setMessage("User registered successfully")
                     .build();
         } catch (LoginAlreadyTakenException | EmailAlreadyTakenException e) {
-            response = AuthServiceProto.RegisterResponseGrpc.newBuilder()
+            response = AuthServiceProto.RegisterResponse.newBuilder()
                     .setSuccess(false)
                     .setMessage(e.getMessage())
                     .build();
@@ -79,8 +61,8 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
 
     @Override
     public void login(
-            AuthServiceProto.LoginRequestGrpc request,
-            StreamObserver<AuthServiceProto.AuthenticateResponseGrpc> responseObserver
+            AuthServiceProto.LoginRequest request,
+            StreamObserver<AuthServiceProto.AuthenticateResponse> responseObserver
     ) {
         requireNonBlank(request.getIdentifier(), "identifier");
         requireNonBlank(request.getPassword(), "password");
@@ -91,9 +73,8 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
         );
 
         AuthenticationResponse loginResponse = authService.login(loginRequest);
-
-        AuthServiceProto.AuthenticateResponseGrpc.Builder responseBuilder =
-                AuthServiceProto.AuthenticateResponseGrpc.newBuilder();
+        AuthServiceProto.AuthenticateResponse.Builder responseBuilder =
+                AuthServiceProto.AuthenticateResponse.newBuilder();
 
         if (loginResponse.isTwoFactorEnabled()) {
             responseBuilder.setTwoFactorRequired(true);
@@ -107,19 +88,19 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
 
     @Override
     public void validateOtp(
-            AuthServiceProto.VerificationRequestGrpc request,
-            StreamObserver<AuthServiceProto.AuthenticateResponseGrpc> responseObserver
+            AuthServiceProto.VerificationRequest request,
+            StreamObserver<AuthServiceProto.AuthenticateResponse> responseObserver
     ) {
-        requireNonBlank(request.getEmail(), "email");
+        requireNonBlank(request.getLogin(), "login");
         requireNonBlank(request.getCode(), "code");
 
         var verificationRequest = new VerificationRequest(
-                request.getEmail(),
+                request.getLogin(),
                 request.getCode()
         );
 
         AuthenticationResponse finalResponse = authService.verifyCode(verificationRequest);
-        AuthServiceProto.AuthenticateResponseGrpc grpcResponse = AuthServiceProto.AuthenticateResponseGrpc.newBuilder()
+        AuthServiceProto.AuthenticateResponse grpcResponse = AuthServiceProto.AuthenticateResponse.newBuilder()
                 .setToken(finalResponse.getToken())
                 .build();
 
@@ -129,12 +110,12 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
 
     @Override
     public void validateJwtToken(
-            AuthServiceProto.ValidateTokenRequestGrpc request,
-            StreamObserver<AuthServiceProto.ValidateTokenResponseGrpc> responseObserver
+            AuthServiceProto.ValidateTokenRequest request,
+            StreamObserver<AuthServiceProto.ValidateTokenResponse> responseObserver
     ) {
         requireNonBlank(request.getToken(), "token");
         boolean isValid = authService.validateToken(request.getToken());
-        AuthServiceProto.ValidateTokenResponseGrpc response = AuthServiceProto.ValidateTokenResponseGrpc
+        AuthServiceProto.ValidateTokenResponse response = AuthServiceProto.ValidateTokenResponse
                 .newBuilder()
                 .setIsValid(isValid)
                 .build();
@@ -145,13 +126,13 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
 
     @Override
     public void updateLogin(
-            AuthServiceProto.UpdateLoginRequestGrpc request,
-            StreamObserver<AuthServiceProto.UpdateCredResponseGrpc> responseObserver
+            AuthServiceProto.UpdateLoginRequest request,
+            StreamObserver<AuthServiceProto.UpdateCredResponse> responseObserver
     ) {
         UUID userId = parseUuid(request.getUserId());
         requireNonBlank(request.getLogin(), "login");
         credentialsService.updateLogin(userId, request.getLogin());
-        AuthServiceProto.UpdateCredResponseGrpc response = AuthServiceProto.UpdateCredResponseGrpc
+        AuthServiceProto.UpdateCredResponse response = AuthServiceProto.UpdateCredResponse
                 .newBuilder()
                 .setMessage("Login updated success")
                 .build();
@@ -161,13 +142,13 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
 
     @Override
     public void updateEmail(
-            AuthServiceProto.UpdateLoginRequestGrpc request,
-            StreamObserver<AuthServiceProto.UpdateCredResponseGrpc> responseObserver
+            AuthServiceProto.UpdateEmailRequest request,
+            StreamObserver<AuthServiceProto.UpdateCredResponse> responseObserver
     ) {
         UUID userId = parseUuid(request.getUserId());
-        requireNonBlank(request.getLogin(), "email");
-        credentialsService.updateEmail(userId, request.getLogin());
-        AuthServiceProto.UpdateCredResponseGrpc response = AuthServiceProto.UpdateCredResponseGrpc
+        requireNonBlank(request.getEmail(), "email");
+        credentialsService.updateEmail(userId, request.getEmail());
+        AuthServiceProto.UpdateCredResponse response = AuthServiceProto.UpdateCredResponse
                 .newBuilder()
                 .setMessage("Email updated success")
                 .build();
@@ -177,17 +158,17 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
 
     @Override
     public void updatePassword(
-            AuthServiceProto.UpdatePasswordRequestGrpc request,
-            StreamObserver<AuthServiceProto.UpdateCredResponseGrpc> responseObserver
+            AuthServiceProto.UpdatePasswordRequest request,
+            StreamObserver<AuthServiceProto.UpdateCredResponse> responseObserver
     ) {
         UUID userId = parseUuid(request.getUserId());
-        requireNonBlank(request.getOldPass(), "oldPass");
-        requireNonBlank(request.getNewPass(), "newPass");
+        requireNonBlank(request.getOldPassword(), "old_password");
+        requireNonBlank(request.getNewPassword(), "new_password");
         credentialsService.updatePassword(
                 userId,
-                request.getOldPass(),
-                request.getNewPass());
-        AuthServiceProto.UpdateCredResponseGrpc response = AuthServiceProto.UpdateCredResponseGrpc
+                request.getOldPassword(),
+                request.getNewPassword());
+        AuthServiceProto.UpdateCredResponse response = AuthServiceProto.UpdateCredResponse
                 .newBuilder()
                 .setMessage("Password changed success")
                 .build();
@@ -196,19 +177,19 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
     }
 
     @Override
-    public void sendEmailVerificationCode(
-            AuthServiceProto.AuthUserIdRequestGrpc request,
-            StreamObserver<AuthServiceProto.VerifyEmailResponseGrpc> responseObserver
+    public void initiateEmailVerification(
+            AuthServiceProto.UserIdRequest request,
+            StreamObserver<AuthServiceProto.VerifyEmailResponse> responseObserver
     ) {
         UUID userId = parseUuid(request.getUserId());
         var userEntity = credentialsService.getByUserId(userId);
 
-//        if (userEntity.isEmailVerified()) {
-//            throw new EmailAlreadyVerifiedException("Email is already verified");
-//        }
+        if (userEntity.isEmailVerified()) {
+            throw new EmailAlreadyVerifiedException("Email is already verified");
+        }
 
-        otpService.initiateVerification(userEntity.getEmail());
-        AuthServiceProto.VerifyEmailResponseGrpc responseGrpc = AuthServiceProto.VerifyEmailResponseGrpc
+        otpService.initiateEmailVerification(userEntity.getEmail());
+        AuthServiceProto.VerifyEmailResponse responseGrpc = AuthServiceProto.VerifyEmailResponse
                 .newBuilder()
                 .setResult(true)
                 .build();
@@ -217,16 +198,20 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
     }
 
     @Override
-    public void verifyEmailCode(
-            AuthServiceProto.VerifyEmailRequestGrpc request,
-            StreamObserver<AuthServiceProto.VerifyEmailResponseGrpc> responseObserver
+    public void finishEmailVerification(
+            AuthServiceProto.VerifyEmailRequest request,
+            StreamObserver<AuthServiceProto.VerifyEmailResponse> responseObserver
     ) {
         UUID userId = parseUuid(request.getUserId());
         requireNonBlank(request.getCode(), "code");
         var userEntity = credentialsService.getByUserId(userId);
         boolean result = otpService.validateOtp(userEntity.getEmail(), request.getCode());
 
-        AuthServiceProto.VerifyEmailResponseGrpc responseGrpc = AuthServiceProto.VerifyEmailResponseGrpc
+        if (result) {
+            credentialsService.verifyEmail(userId);
+        }
+
+        AuthServiceProto.VerifyEmailResponse responseGrpc = AuthServiceProto.VerifyEmailResponse
                 .newBuilder()
                 .setResult(result)
                 .build();
@@ -235,11 +220,14 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
     }
 
     @Override
-    public void getUser(AuthServiceProto.AuthUserIdRequestGrpc request, StreamObserver<AuthServiceProto.UserCredResponseGrpc> responseObserver) {
+    public void getUserCredentials(
+            AuthServiceProto.UserIdRequest request,
+            StreamObserver<AuthServiceProto.UserCredResponse> responseObserver
+    ) {
         UUID userId = parseUuid(request.getUserId());
         var userEntity = credentialsService.getByUserId(userId);
 
-        AuthServiceProto.UserCredResponseGrpc responseGrpc = AuthServiceProto.UserCredResponseGrpc
+        AuthServiceProto.UserCredResponse responseGrpc = AuthServiceProto.UserCredResponse
                 .newBuilder()
                 .setLogin(userEntity.getLogin())
                 .setEmail(userEntity.getEmail())
@@ -252,22 +240,40 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
     }
 
     @Override
-    public void enableTwoFactor(AuthServiceProto.AuthUserIdRequestGrpc request, StreamObserver<AuthServiceProto.EnableTwoFactorResponseGrpc> responseObserver) {
+    public void enableTwoFactor(
+            AuthServiceProto.UserIdRequest request,
+            StreamObserver<AuthServiceProto.EnableTwoFactorResponse> responseObserver
+    ) {
         UUID userId = parseUuid(request.getUserId());
         try {
             twoFactorAuthService.enable2FA(userId);
-            var response = AuthServiceProto.EnableTwoFactorResponseGrpc.newBuilder()
+            var response = AuthServiceProto.EnableTwoFactorResponse.newBuilder()
                     .setResult(true)
                     .setMessage("Two-factor authentication enabled")
                     .build();
             responseObserver.onNext(response);
         } catch (Exception ex) {
-            var response = AuthServiceProto.EnableTwoFactorResponseGrpc.newBuilder()
+            var response = AuthServiceProto.EnableTwoFactorResponse.newBuilder()
                     .setResult(false)
                     .setMessage(ex.getMessage() == null ? "Failed to enable 2FA" : ex.getMessage())
                     .build();
             responseObserver.onNext(response);
         }
         responseObserver.onCompleted();
+    }
+
+    private void requireNonBlank(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+    }
+
+    private UUID parseUuid(String rawUserId) {
+        requireNonBlank(rawUserId, "userId");
+        try {
+            return UUID.fromString(rawUserId);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("userId must be a valid UUID");
+        }
     }
 }

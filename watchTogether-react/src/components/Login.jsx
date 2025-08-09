@@ -106,8 +106,11 @@ export default function Login({onSwitchToRegister, onClose, onLogin}) {
 
     // Если показываем форму OTP
     if (showOtpForm) {
+        // Use the same identifier the user entered (username or email)
+        const identifier = username;
         return (
             <OtpInput 
+                identifier={identifier}
                 email={userEmail}
                 onBack={handleBackToLogin}
                 onLogin={onLogin}
