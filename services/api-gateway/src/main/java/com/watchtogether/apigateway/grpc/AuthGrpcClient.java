@@ -16,8 +16,8 @@ public class AuthGrpcClient {
     @GrpcClient("auth-service")
     private AuthServiceGrpc.AuthServiceBlockingStub blockingStub;
 
-    public AuthServiceProto.RegisterResponse registerUser(String login, String email, String password) {
-        AuthServiceProto.RegisterRequest request = AuthServiceProto.RegisterRequest.newBuilder()
+    public AuthServiceProto.RegisterResponseGrpc registerUser(String login, String email, String password) {
+        AuthServiceProto.RegisterRequestGrpc request = AuthServiceProto.RegisterRequestGrpc.newBuilder()
                 .setLogin(login)
                 .setEmail(email)
                 .setPassword(password)
@@ -25,19 +25,27 @@ public class AuthGrpcClient {
         return blockingStub.registerUser(request);
     }
 
-    public AuthServiceProto.AuthenticateResponse authenticate(String identifier, String password) {
-        AuthServiceProto.LoginRequest request = AuthServiceProto.LoginRequest.newBuilder()
+    public AuthServiceProto.AuthenticateResponseGrpc login(String identifier, String password) {
+        AuthServiceProto.LoginRequestGrpc request = AuthServiceProto.LoginRequestGrpc.newBuilder()
                 .setIdentifier(identifier)
                 .setPassword(password)
                 .build();
-        return blockingStub.authenticate(request);
+        return blockingStub.login(request);
     }
 
-    public AuthServiceProto.ValidateTokenResponse validateToken(String token) {
-        AuthServiceProto.ValidateTokenRequest request = AuthServiceProto.ValidateTokenRequest.newBuilder()
+    public AuthServiceProto.AuthenticateResponseGrpc validateOtp(String email, String code) {
+        AuthServiceProto.VerificationRequestGrpc request = AuthServiceProto.VerificationRequestGrpc.newBuilder()
+                .setEmail(email)
+                .setCode(code)
+                .build();
+        return blockingStub.validateOtp(request);
+    }
+
+    public AuthServiceProto.ValidateTokenResponseGrpc validateToken(String token) {
+        AuthServiceProto.ValidateTokenRequestGrpc request = AuthServiceProto.ValidateTokenRequestGrpc.newBuilder()
                 .setToken(token)
                 .build();
-        return blockingStub.validateToken(request);
+        return blockingStub.validateJwtToken(request);
     }
 
     public AuthServiceProto.UpdateCredResponseGrpc updateUserLogin(String userId, String login) {
@@ -66,6 +74,23 @@ public class AuthGrpcClient {
                 .setNewPass(newPass)
                 .build();
         return blockingStub.updatePassword(request);
+    }
+
+    public AuthServiceProto.VerifyEmailResponseGrpc sendEmailVerificationCode(String userId) {
+        AuthServiceProto.AuthUserIdRequestGrpc request = AuthServiceProto.AuthUserIdRequestGrpc
+                .newBuilder()
+                .setUserId(userId)
+                .build();
+        return blockingStub.sendEmailVerificationCode(request);
+    }
+
+    public AuthServiceProto.VerifyEmailResponseGrpc verifyEmailCode(String userId, String code) {
+        AuthServiceProto.VerifyEmailRequestGrpc request = AuthServiceProto.VerifyEmailRequestGrpc
+                .newBuilder()
+                .setUserId(userId)
+                .setCode(code)
+                .build();
+        return blockingStub.verifyEmailCode(request);
     }
 
 }

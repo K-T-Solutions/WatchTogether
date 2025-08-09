@@ -5,9 +5,14 @@ option java_package = "com.watchtogether.grpc";
 option java_outer_classname = "AuthServiceProto";
 
 service AuthService {
-  rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
-  rpc Authenticate (LoginRequest) returns (AuthenticateResponse);
-  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  rpc RegisterUser (RegisterRequestGrpc) returns (RegisterResponseGrpc);
+
+  rpc Login (LoginRequestGrpc) returns (AuthenticateResponseGrpc);
+
+  rpc ValidateOtp (VerificationRequestGrpc) returns (AuthenticateResponseGrpc);
+
+  rpc ValidateJwtToken (ValidateTokenRequestGrpc) returns (ValidateTokenResponseGrpc);
 
   rpc UpdateLogin (UpdateLoginRequestGrpc) returns (UpdateCredResponseGrpc);
 
@@ -15,33 +20,45 @@ service AuthService {
 
   rpc UpdatePassword (UpdatePasswordRequestGrpc) returns (UpdateCredResponseGrpc);
 
+  rpc SendEmailVerificationCode (AuthUserIdRequestGrpc) returns (VerifyEmailResponseGrpc); //TODO: проблема имен (завтра отрефакторить жестко)
+
+  rpc VerifyEmailCode (VerifyEmailRequestGrpc) returns (VerifyEmailResponseGrpc);
+
 }
 
-message RegisterRequest {
+message RegisterRequestGrpc {
   string login = 1;
   string email = 2;
   string password = 3;
 }
 
-message RegisterResponse {
+message RegisterResponseGrpc {
   bool success = 1;
   string message = 2;
 }
 
-message LoginRequest {
+message LoginRequestGrpc {
   string identifier = 1; // Может быть логином или email
   string password = 2;
 }
 
-message AuthenticateResponse {
-  string token = 1; // Пустая строка означает неудачу
+message VerificationRequestGrpc {
+  string email = 1;
+  string code = 2;
 }
 
-message ValidateTokenRequest {
+message AuthenticateResponseGrpc {
+  oneof response_type {
+    string token = 1;
+    bool two_factor_required = 2;
+  }
+}
+
+message ValidateTokenRequestGrpc {
   string token = 1;
 }
 
-message ValidateTokenResponse {
+message ValidateTokenResponseGrpc {
   bool is_valid = 1;
 }
 
@@ -58,5 +75,18 @@ message UpdatePasswordRequestGrpc {
 
 message UpdateCredResponseGrpc {
   string message = 1;
+}
+
+message AuthUserIdRequestGrpc {
+  string userId = 1;
+}
+
+message VerifyEmailRequestGrpc {
+  string userId = 1;
+  string code = 2;
+}
+
+message VerifyEmailResponseGrpc {
+  bool result = 1;
 }
 
