@@ -23,22 +23,53 @@ public class AuthController {
             @Argument String email,
             @Argument String password
     ) {
-        AuthServiceProto.RegisterResponse response = authGrpcClient.registerUser(login, email, password);
+        AuthServiceProto.RegisterResponseGrpc response = authGrpcClient.registerUser(login, email, password);
         return new RegisterResponse(response.getSuccess(), response.getMessage());
     }
 
+//    @MutationMapping
+//    public LoginResponse login(
+//            @Argument String username,
+//            @Argument String password
+//    ) {
+//        AuthServiceProto.AuthenticateResponseGrpc response = authGrpcClient.login(username, password);
+//        return new LoginResponse(response.getToken());
+//    }
+
     @MutationMapping
-    public LoginResponse login(
+    public AuthenticationResponse login(
             @Argument String username,
             @Argument String password
     ) {
-        AuthServiceProto.AuthenticateResponse response = authGrpcClient.authenticate(username, password);
-        return new LoginResponse(response.getToken());
+        // 1. Вызываем gRPC клиент, как и раньше
+        AuthServiceProto.AuthenticateResponseGrpc response = authGrpcClient.login(username, password);
+
+        // 2. Анализируем ответ от gRPC сервиса
+        // Используем getResponseTypeCase(), чтобы проверить, какое поле в 'oneof' заполнено
+        if (response.getResponseTypeCase() == AuthServiceProto.AuthenticateResponseGrpc.ResponseTypeCase.TWO_FACTOR_REQUIRED) {
+            // Требуется второй шаг. Возвращаем соответствующий ответ.
+            // Токена нет, флаг twoFactorRequired = true
+            return new AuthenticationResponse(true, null);
+        } else {
+            // 2FA не требуется, аутентификация прошла успешно.
+            // Возвращаем токен, флаг twoFactorRequired = false
+            return new AuthenticationResponse(false, response.getToken());
+        }
+    }
+
+    @MutationMapping
+    public AuthenticationResponse validateOtp(
+            @Argument String email,
+            @Argument String code
+    ) {
+        AuthServiceProto.AuthenticateResponseGrpc response = authGrpcClient.validateOtp(email, code);
+
+        return new AuthenticationResponse(true, response.getToken());
     }
 
     @QueryMapping
     public boolean validateToken(@Argument String token) {
-        AuthServiceProto.ValidateTokenResponse response = authGrpcClient.validateToken(token);
+        AuthServiceProto.ValidateTokenResponseGrpc response = authGrpcClient.validateToken(token);
         return response.getIsValid();
     }
 
@@ -100,9 +131,19 @@ public class AuthController {
         }
     }
 
+    @QueryMapping
+    public Boolean sendEmailVerificationCode(@Argument UUID userId) {
+        return authGrpcClient.sendEmailVerificationCode(userId.toString()).getResult(); //TODO: refactor
+    }
+
+    @QueryMapping
+    public Boolean verifyEmailCode(@Argument UUID userId, @Argument String code) {
+        return authGrpcClient.verifyEmailCode(userId.toString(), code).getResult(); //TODO: refactor
+    }
+
     public record RegisterResponse(Boolean result, String message) {}
 
-    public record LoginResponse(String token) {}
+    public record AuthenticationResponse(boolean twoFactorRequired, String token) {}
 
     public record UpdateUserCredResponse(String message) {}
 

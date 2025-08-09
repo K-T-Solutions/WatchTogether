@@ -1,11 +1,18 @@
 
 type Query {
     validateToken(token: String!): Boolean!
+
+    sendEmailVerificationCode(userId: ID!): Boolean!
+
+    verifyEmailCode(userId: ID!, code: String!): Boolean!
 }
 
 type Mutation {
     register(login: String!, email: String!, password: String!): RegisterResponse!
-    login(username: String!, password: String!): LoginResponse!
+
+    login(username: String!, password: String!): AuthenticationResponse!
+
+    validateOtp(email: String!, code: String!): AuthenticationResponse! #TODO: мб улучшить тчобы не передавать почту по сети
 
     updateUserLogin(userId: ID!, newLogin: String!): UpdateUserCredResponse!
 
@@ -13,11 +20,13 @@ type Mutation {
 
     updateUserPassword(userId: ID!, oldPass: String!, newPass: String!): UpdateUserCredResponse!
 
+
+
 }
 
-type LoginResponse {
-    token: String!
-    message: String
+type AuthenticationResponse {
+    twoFactorRequired: Boolean!
+    token: String # null if 2FA required
 }
 
 type RegisterResponse {

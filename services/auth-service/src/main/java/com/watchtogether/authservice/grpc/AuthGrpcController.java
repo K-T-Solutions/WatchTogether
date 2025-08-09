@@ -195,7 +195,7 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
 
     @Override
     public void sendEmailVerificationCode(
-            AuthServiceProto.UserIdRequestGrpc request,
+            AuthServiceProto.AuthUserIdRequestGrpc request,
             StreamObserver<AuthServiceProto.VerifyEmailResponseGrpc> responseObserver
     ) {
         UUID userId = parseUuid(request.getUserId());
