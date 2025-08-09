@@ -24,6 +24,10 @@ service AuthService {
 
   rpc VerifyEmailCode (VerifyEmailRequestGrpc) returns (VerifyEmailResponseGrpc);
 
+  rpc GetUser (AuthUserIdRequestGrpc) returns (UserCredResponseGrpc);
+
+  rpc EnableTwoFactor (AuthUserIdRequestGrpc) returns (EnableTwoFactorResponseGrpc);
+
 }
 
 message RegisterRequestGrpc {
@@ -90,3 +94,15 @@ message VerifyEmailResponseGrpc {
   bool result = 1;
 }
 
+message UserCredResponseGrpc {
+  string login = 1;
+  string email = 2;
+  bool emailVerified = 3;
+  bool enabled = 4;
+  string createdAt = 5;
+}
+
+message EnableTwoFactorResponseGrpc {
+  bool result = 1;
+  string message = 2;
+}

@@ -93,4 +93,21 @@ public class AuthGrpcClient {
         return blockingStub.verifyEmailCode(request);
     }
 
+    public AuthServiceProto.UserCredResponseGrpc getUserCred(String userId) {
+        return blockingStub.
+                getUser(AuthServiceProto.AuthUserIdRequestGrpc
+                        .newBuilder()
+                        .setUserId(userId)
+                        .build());
+    }
+
+    public AuthServiceProto.EnableTwoFactorResponseGrpc enableTwoFactor(String userId) {
+        return blockingStub.enableTwoFactor(
+                AuthServiceProto.AuthUserIdRequestGrpc
+                        .newBuilder()
+                        .setUserId(userId)
+                        .build()
+        );
+    }
+
 }

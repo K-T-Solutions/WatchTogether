@@ -141,10 +141,34 @@ public class AuthController {
         return authGrpcClient.verifyEmailCode(userId.toString(), code).getResult(); //TODO: refactor
     }
 
+    @QueryMapping
+    public AuthServiceProto.UserCredResponseGrpc getUserCred(@Argument UUID userId) {
+        return authGrpcClient.getUserCred(userId.toString());
+    }
+
+    @MutationMapping
+    public UpdateUserCredResponse enableTwoFactor(@Argument UUID userId) {
+        try {
+            var response = authGrpcClient.enableTwoFactor(userId.toString());
+            if (response.getResult()) {
+                return new UpdateUserCredResponse(response.getMessage());
+            }
+            return new UpdateUserCredResponse("Error enabling 2FA: " + response.getMessage());
+        } catch (Exception e) {
+            return new UpdateUserCredResponse("Error enabling 2FA: " + e.getMessage());
+        }
+    }
+
     public record RegisterResponse(Boolean result, String message) {}
 
     public record AuthenticationResponse(boolean twoFactorRequired, String token) {}
 
     public record UpdateUserCredResponse(String message) {}
+
+    public record UserCredResponse(String login,
+                                   String email,
+                                   boolean emailVerified,
+                                   boolean enabled,
+                                   String createdAt) {}
 
 }

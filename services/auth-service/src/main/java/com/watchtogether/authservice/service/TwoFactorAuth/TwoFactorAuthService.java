@@ -1,10 +1,12 @@
 package com.watchtogether.authservice.service.TwoFactorAuth;
 
 import com.watchtogether.authservice.exception.AccessDeniedException;
+import com.watchtogether.authservice.entity.TwoFactorAuth;
 import com.watchtogether.authservice.service.credentials.ICredentialsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -38,12 +40,20 @@ public class TwoFactorAuthService implements ITwoFactorAuthService {
      * {@inheritDoc}
      */
     @Override
+    @Transactional
     public void enable2FA(UUID userId) {
         var userEntity = credentialsService.getByUserId(userId);
 
         if (!userEntity.isEmailVerified()) {
             // TODO: Consider using a more specific exception, e.g., EmailNotVerifiedException.
             throw new AccessDeniedException("Email must be verified before enabling 2FA.");
+        }
+
+        // Ensure TwoFactorAuth entity exists
+        if (userEntity.getTwoFactorAuth() == null) {
+            TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+            twoFactorAuth.setUser(userEntity);
+            userEntity.setTwoFactorAuth(twoFactorAuth);
         }
 
         List<String> rawRecoveryCodes = generateRecoveryCodes();
@@ -57,7 +67,7 @@ public class TwoFactorAuthService implements ITwoFactorAuthService {
         // At this point, you should return the 'rawRecoveryCodes' to the user
         // so they can save them. Remember to show them only once.
 
-//         credentialsService.save(userEntity); // Assuming you need to save the updated entity
+        // Changes will be persisted on transaction commit due to JPA dirty checking
     }
 
     /**

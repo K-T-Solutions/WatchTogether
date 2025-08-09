@@ -5,6 +5,10 @@ type Query {
     sendEmailVerificationCode(userId: ID!): Boolean!
 
     verifyEmailCode(userId: ID!, code: String!): Boolean!
+
+    checkIsEmailVerified(userId: ID!): Boolean!
+
+    getUserCred(userId: ID!): UserCredResponse
 }
 
 type Mutation {
@@ -20,6 +24,7 @@ type Mutation {
 
     updateUserPassword(userId: ID!, oldPass: String!, newPass: String!): UpdateUserCredResponse!
 
+    enableTwoFactor(userId: ID!): UpdateUserCredResponse!
 
 
 }
@@ -36,5 +41,13 @@ type RegisterResponse {
 
 type UpdateUserCredResponse {
     message: String!
+}
+
+type UserCredResponse {
+    login: String
+    email: String
+    emailVerified: Boolean
+    enabled: Boolean
+    createdAt: String
 }
 

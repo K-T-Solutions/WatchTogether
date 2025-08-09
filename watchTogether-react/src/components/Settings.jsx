@@ -6,6 +6,7 @@ import { UPDATE_USER_PROFILE, UPDATE_USER_LOGIN, UPDATE_USER_PASSWORD } from "..
 import { getUserFromToken } from "../utils/jwt";
 import Header from "./Header";
 import Notification from "./Notification";
+import { GET_USER_CRED_QUERY, ENABLE_TWO_FACTOR_MUTATION, SEND_EMAIL_VERIFICATION_CODE, VERIFY_EMAIL_CODE } from "../graphql/auth";
 
 export default function Settings({ currentUser, onLogout }) {
   const [activeSection, setActiveSection] = useState('public-profile');
@@ -24,6 +25,13 @@ export default function Settings({ currentUser, onLogout }) {
     skip: !userId,
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all'
+  });
+
+  // Загружаем креды пользователя (emailVerified)
+  const { data: credData, refetch: refetchCreds } = useQuery(GET_USER_CRED_QUERY, {
+    variables: { userId },
+    skip: !userId,
+    fetchPolicy: 'cache-first'
   });
 
   // Мутация для обновления профиля
@@ -192,6 +200,81 @@ export default function Settings({ currentUser, onLogout }) {
   // Состояние для отображения форм
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const isEmailVerified = !!credData?.getUserCred?.emailVerified;
+  const [enableTwoFactor, { loading: enable2faLoading }] = useMutation(ENABLE_TWO_FACTOR_MUTATION, {
+    onCompleted: (res) => {
+      setNotification({ isVisible: true, message: res?.enableTwoFactor?.message || '2FA enabled', type: 'success' });
+      refetchCreds();
+    },
+    onError: (e) => {
+      setNotification({ isVisible: true, message: `Error enabling 2FA: ${e.message}`, type: 'error' });
+    }
+  });
+
+  // Email verification
+  const [emailCode, setEmailCode] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const [isSending, setIsSending] = useState(false);
+
+  const startCooldown = (seconds = 30) => {
+    setCooldown(seconds);
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendEmailCode = async () => {
+    if (!userId || isEmailVerified || cooldown > 0) return;
+    try {
+      setIsSending(true);
+      // query
+      // use Apollo Client directly via query to avoid new hooks; but here we can use refetch with different query
+      await refetch({ userId }); // keep cache warm
+      // run lightweight query via client from context of useQuery hook
+      // eslint-disable-next-line no-undef
+      await window.__APOLLO_CLIENT__.query({
+        query: SEND_EMAIL_VERIFICATION_CODE,
+        variables: { userId }
+      });
+      setNotification({ isVisible: true, message: 'Verification code sent to your email', type: 'success' });
+      startCooldown(30);
+    } catch (e) {
+      setNotification({ isVisible: true, message: `Failed to send code: ${e.message}` , type: 'error' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async () => {
+    if (!emailCode.trim()) {
+      setNotification({ isVisible: true, message: 'Enter verification code', type: 'error' });
+      return;
+    }
+    try {
+      // eslint-disable-next-line no-undef
+      const res = await window.__APOLLO_CLIENT__.query({
+        query: VERIFY_EMAIL_CODE,
+        variables: { userId, code: emailCode.trim() },
+        fetchPolicy: 'no-cache'
+      });
+      const ok = !!res?.data?.verifyEmailCode;
+      if (ok) {
+        setNotification({ isVisible: true, message: 'Email verified successfully', type: 'success' });
+        setEmailCode("");
+        await refetchCreds();
+      } else {
+        setNotification({ isVisible: true, message: 'Invalid code', type: 'error' });
+      }
+    } catch (e) {
+      setNotification({ isVisible: true, message: `Failed to verify: ${e.message}`, type: 'error' });
+    }
+  };
 
   // Состояние для отслеживания исходных данных
   const [originalPublicProfileData, setOriginalPublicProfileData] = useState({
@@ -677,46 +760,132 @@ export default function Settings({ currentUser, onLogout }) {
         <p className="text-gray-400">Manage your account credentials and preferences</p>
       </div>
 
-      {/* Current Account Info */}
-      <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
-        {/* Current Username */}
-        <div>
-          <label className="block text-gray-400 text-sm font-medium mb-2">
-            Current Username
-          </label>
-          <p className="text-white text-lg font-medium">{profileData?.login || currentUser?.username || 'Not set'}</p>
+      {/* Current Account Info Card */}
+      <div className="bg-gradient-to-br from-[#181828] to-[#121225] rounded-2xl p-6 border border-[#232346]/60 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div className="text-gray-400 text-sm">Current Username</div>
+            <div className="text-white text-xl font-semibold">{profileData?.login || currentUser?.username || 'Not set'}</div>
+          </div>
+          <div className="space-y-3">
+            <div className="text-gray-400 text-sm">Current Email</div>
+            <div className="text-white text-xl font-semibold">{profileData?.displayEmail || currentUser?.email || 'Not set'}</div>
+          </div>
         </div>
 
-        {/* Current Email */}
-        <div>
-          <label className="block text-gray-400 text-sm font-medium mb-2">
-            Current Email
-          </label>
-          <p className="text-white text-lg font-medium">{profileData?.displayEmail || currentUser?.email || 'Not set'}</p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-4 pt-4">
+        <div className="mt-6 flex flex-wrap gap-4">
           <button
             onClick={handleShowLoginForm}
             disabled={updateLoginLoading || updatePasswordLoading}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Update Login
+            <span>Update Login</span>
           </button>
           <button
             onClick={handleShowPasswordForm}
             disabled={updateLoginLoading || updatePasswordLoading}
-            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Update Password
+            <span>Update Password</span>
           </button>
+        </div>
+      </div>
+
+      {/* Security / Email Verify + 2FA Card */}
+      <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346] space-y-6">
+        {/* Email verification row */}
+        <div className="flex flex-col md:flex-row md:items-end gap-4">
+          <div className="flex-1">
+            <h3 className="text-white text-lg font-semibold">Email verification</h3>
+            <p className="text-gray-400 text-sm mt-1">Verify your email to enable advanced security features</p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium border"
+                 style={{
+                   background: isEmailVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.08)',
+                   color: isEmailVerified ? '#10B981' : '#EF4444',
+                   borderColor: isEmailVerified ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'
+                 }}>
+              <span className={`w-2 h-2 rounded-full ${isEmailVerified ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+              <span>{isEmailVerified ? 'Email verified' : 'Email not verified'}</span>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center gap-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Enter code"
+              value={emailCode}
+              onChange={(e) => setEmailCode(e.target.value)}
+              disabled={isEmailVerified}
+              className="flex-1 p-3 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              onClick={handleSendEmailCode}
+              disabled={isEmailVerified || cooldown > 0 || isSending}
+              className={`px-4 py-3 rounded-lg font-semibold transition ${
+                isEmailVerified || cooldown > 0 || isSending
+                ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
+                : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+              }`}
+            >
+              {cooldown > 0 ? `Resend (${cooldown}s)` : 'Send code'}
+            </button>
+            <button
+              onClick={handleVerifyEmailCode}
+              disabled={isEmailVerified || !emailCode.trim()}
+              className={`px-4 py-3 rounded-lg font-semibold transition ${
+                isEmailVerified || !emailCode.trim()
+                ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+              }`}
+            >
+              Verify
+            </button>
+          </div>
+        </div>
+
+        <div className="h-px bg-[#232346]" />
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-white text-lg font-semibold">Two‑Factor Authentication (2FA)</h3>
+            <p className="text-gray-400 text-sm mt-1">Add an extra layer of security to your account</p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium border"
+                 style={{
+                   background: isEmailVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.08)',
+                   color: isEmailVerified ? '#10B981' : '#EF4444',
+                   borderColor: isEmailVerified ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'
+                 }}>
+              <span className={`w-2 h-2 rounded-full ${isEmailVerified ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+              <span>{isEmailVerified ? 'Email verified' : 'Email not verified'}</span>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              onClick={() => enableTwoFactor({ variables: { userId } })}
+              disabled={!isEmailVerified || enable2faLoading}
+              className={`inline-flex items-center gap-2 font-semibold py-3 px-5 rounded-lg transition ${
+                !isEmailVerified || enable2faLoading
+                  ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-tr from-indigo-500 to-pink-500 text-white hover:opacity-90'
+              }`}
+            >
+              {enable2faLoading ? (
+                <span className="flex items-center gap-2"><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span> Enabling…</span>
+              ) : (
+                'Enable 2FA'
+              )}
+            </button>
+            {!isEmailVerified && (
+              <div className="text-xs text-gray-400">Verify your email to enable 2FA</div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Login Update Form */}
       {showLoginForm && (
-        <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
+        <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346] space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-white text-lg font-semibold">Update Username</h3>
             <button
@@ -772,7 +941,7 @@ export default function Settings({ currentUser, onLogout }) {
 
       {/* Password Update Form */}
       {showPasswordForm && (
-        <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
+        <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346] space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-white text-lg font-semibold">Update Password</h3>
             <button

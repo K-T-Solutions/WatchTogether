@@ -8,6 +8,7 @@ import com.watchtogether.authservice.request.RegisterRequest;
 import com.watchtogether.authservice.request.VerificationRequest;
 import com.watchtogether.authservice.response.AuthenticationResponse;
 import com.watchtogether.authservice.service.Otp.IOtpService;
+import com.watchtogether.authservice.service.TwoFactorAuth.ITwoFactorAuthService;
 import com.watchtogether.authservice.service.auth.AuthService;
 import com.watchtogether.authservice.service.credentials.ICredentialsService;
 import com.watchtogether.grpc.AuthServiceProto;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.AuthServiceImplBase {
     private final AuthService authService;
     private final ICredentialsService credentialsService;
+    private final ITwoFactorAuthService twoFactorAuthService;
     private final IOtpService otpService;
 
     private void requireNonBlank(String value, String fieldName) {
@@ -201,9 +203,9 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
         UUID userId = parseUuid(request.getUserId());
         var userEntity = credentialsService.getByUserId(userId);
 
-        if (userEntity.isEmailVerified()) {
-            throw new EmailAlreadyVerifiedException("Email is already verified");
-        }
+//        if (userEntity.isEmailVerified()) {
+//            throw new EmailAlreadyVerifiedException("Email is already verified");
+//        }
 
         otpService.initiateVerification(userEntity.getEmail());
         AuthServiceProto.VerifyEmailResponseGrpc responseGrpc = AuthServiceProto.VerifyEmailResponseGrpc
@@ -229,6 +231,43 @@ public class AuthGrpcController extends com.watchtogether.grpc.AuthServiceGrpc.A
                 .setResult(result)
                 .build();
         responseObserver.onNext(responseGrpc);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getUser(AuthServiceProto.AuthUserIdRequestGrpc request, StreamObserver<AuthServiceProto.UserCredResponseGrpc> responseObserver) {
+        UUID userId = parseUuid(request.getUserId());
+        var userEntity = credentialsService.getByUserId(userId);
+
+        AuthServiceProto.UserCredResponseGrpc responseGrpc = AuthServiceProto.UserCredResponseGrpc
+                .newBuilder()
+                .setLogin(userEntity.getLogin())
+                .setEmail(userEntity.getEmail())
+                .setEmailVerified(userEntity.isEmailVerified())
+                .setEnabled(userEntity.isEnabled())
+                .setCreatedAt(userEntity.getCreatedAt().toString())
+                .build();
+        responseObserver.onNext(responseGrpc);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void enableTwoFactor(AuthServiceProto.AuthUserIdRequestGrpc request, StreamObserver<AuthServiceProto.EnableTwoFactorResponseGrpc> responseObserver) {
+        UUID userId = parseUuid(request.getUserId());
+        try {
+            twoFactorAuthService.enable2FA(userId);
+            var response = AuthServiceProto.EnableTwoFactorResponseGrpc.newBuilder()
+                    .setResult(true)
+                    .setMessage("Two-factor authentication enabled")
+                    .build();
+            responseObserver.onNext(response);
+        } catch (Exception ex) {
+            var response = AuthServiceProto.EnableTwoFactorResponseGrpc.newBuilder()
+                    .setResult(false)
+                    .setMessage(ex.getMessage() == null ? "Failed to enable 2FA" : ex.getMessage())
+                    .build();
+            responseObserver.onNext(response);
+        }
         responseObserver.onCompleted();
     }
 }

@@ -32,3 +32,35 @@ export const VALIDATE_TOKEN_QUERY = gql`
     validateToken(token: $token)
   }
 `; 
+
+export const GET_USER_CRED_QUERY = gql`
+  query GetUserCred($userId: ID!) {
+    getUserCred(userId: $userId) {
+      emailVerified
+      login
+      email
+      enabled
+      createdAt
+    }
+  }
+`;
+
+export const ENABLE_TWO_FACTOR_MUTATION = gql`
+  mutation EnableTwoFactor($userId: ID!) {
+    enableTwoFactor(userId: $userId) {
+      message
+    }
+  }
+`;
+
+export const SEND_EMAIL_VERIFICATION_CODE = gql`
+  query SendEmailVerificationCode($userId: ID!) {
+    sendEmailVerificationCode(userId: $userId)
+  }
+`;
+
+export const VERIFY_EMAIL_CODE = gql`
+  query VerifyEmailCode($userId: ID!, $code: String!) {
+    verifyEmailCode(userId: $userId, code: $code)
+  }
+`;
