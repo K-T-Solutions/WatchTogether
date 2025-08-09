@@ -15,6 +15,7 @@ public class OtpService implements IOtpService {
 
     private static final long OTP_VALIDITY_MINUTES = 5;
     private static final String OTP_CODE_SUBJECT = "[WatchTogether] Your Verification Code]";
+    private static final String EMAIL_VERIFICATION_SUBJECT = "[WatchTogether] Your Email Verification Code"; //TODO: update later
 
     private final PasswordEncoder passwordEncoder;
     private final RedisTemplate<String, String> redisTemplate;
@@ -23,7 +24,14 @@ public class OtpService implements IOtpService {
     private static final SecureRandom random = new SecureRandom();
 
     @Override
-    public void initiateVerification(String email) {
+    public void initiateEmailVerification(String email) {
+        String code = generateOtpCode();
+        storeOtp(email, code);
+        mailSender.send(email, EMAIL_VERIFICATION_SUBJECT, code);
+    }
+
+    @Override
+    public void initiate2FAVerification(String email) {
         String code = generateOtpCode();
         storeOtp(email, code);
         mailSender.send(email, OTP_CODE_SUBJECT, code);
@@ -41,7 +49,7 @@ public class OtpService implements IOtpService {
         return false;
     }
 
-    public void storeOtp(String key, String otp) {
+    private void storeOtp(String key, String otp) {
         String redisKey = "otp:" + key;
         redisTemplate.opsForValue()
                 .set(redisKey, passwordEncoder.encode(otp), Duration.ofMinutes(OTP_VALIDITY_MINUTES));

@@ -1,22 +1,24 @@
 
 type Query {
-    validateToken(token: String!): Boolean!
+    validateJwtToken(token: String!): Boolean!
 
-    sendEmailVerificationCode(userId: ID!): Boolean!
 
-    verifyEmailCode(userId: ID!, code: String!): Boolean!
+    validateOtp(login: String!, code: String!): AuthenticationResponse!
 
-    checkIsEmailVerified(userId: ID!): Boolean!
+    initiateEmailVerification(userId: ID!): Boolean!
 
-    getUserCred(userId: ID!): UserCredResponse
+    finishEmailVerification(userId: ID!, code: String!): Boolean!
+
+#    checkIsEmailVerified(userId: ID!): Boolean!
+
+    getUserCredentials(userId: ID!): UserCredResponse
+
 }
 
 type Mutation {
     register(login: String!, email: String!, password: String!): RegisterResponse!
 
     login(username: String!, password: String!): AuthenticationResponse!
-
-    validateOtp(email: String!, code: String!): AuthenticationResponse! #TODO: мб улучшить тчобы не передавать почту по сети
 
     updateUserLogin(userId: ID!, newLogin: String!): UpdateUserCredResponse!
 

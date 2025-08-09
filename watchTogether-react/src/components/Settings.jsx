@@ -200,7 +200,7 @@ export default function Settings({ currentUser, onLogout }) {
   // Состояние для отображения форм
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const isEmailVerified = !!credData?.getUserCred?.emailVerified;
+  const isEmailVerified = !!credData?.getUserCredentials?.emailVerified;
   const [enableTwoFactor, { loading: enable2faLoading }] = useMutation(ENABLE_TWO_FACTOR_MUTATION, {
     onCompleted: (res) => {
       setNotification({ isVisible: true, message: res?.enableTwoFactor?.message || '2FA enabled', type: 'success' });
@@ -263,7 +263,7 @@ export default function Settings({ currentUser, onLogout }) {
         variables: { userId, code: emailCode.trim() },
         fetchPolicy: 'no-cache'
       });
-      const ok = !!res?.data?.verifyEmailCode;
+      const ok = !!res?.data?.finishEmailVerification;
       if (ok) {
         setNotification({ isVisible: true, message: 'Email verified successfully', type: 'success' });
         setEmailCode("");

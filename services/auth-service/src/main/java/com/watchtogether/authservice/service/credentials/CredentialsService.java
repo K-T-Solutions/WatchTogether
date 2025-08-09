@@ -39,7 +39,7 @@ public class CredentialsService implements ICredentialsService {
         return Optional.ofNullable(getByUserId(userId)) //TODO: создавать 2fa сущность
                 .map(u -> {
                     u.setEmail(newEmail);
-                    u.setEmailVerified(false); //TODO: проверит ьтчо будет с 2FA
+                    u.setEmailVerified(false); //TODO: проверит что будет с 2FA
                     kafkaProducer.sendUpdateUserCredEvent(
                             UpdateUserCredEvent.builder()
                                     .userId(userId)
@@ -82,6 +82,15 @@ public class CredentialsService implements ICredentialsService {
                     return repository.save(u);
                 }).orElseThrow(() ->
                         new InvalidCredentialsException("Invalid password"));
+    }
+
+    @Override
+    public void verifyEmail(UUID userId) {
+        Optional.ofNullable(getByUserId(userId))
+                .map(u -> {
+                    u.setEmailVerified(true);
+                    return repository.save(u);
+                }); //TODO: проверить нужно ли бросать исключение
     }
 
 }
