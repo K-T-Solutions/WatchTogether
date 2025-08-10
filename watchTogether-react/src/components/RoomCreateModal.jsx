@@ -82,58 +82,77 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
         onRoomCreate={onRoomCreate}
       />
       <div className="flex-1 flex flex-col items-center justify-start pt-28 pb-12 px-4">
-        <div className="w-full max-w-xl bg-[#232346] rounded-2xl shadow-2xl p-0 overflow-hidden animate-fadeIn">
-          <div className="flex border-b border-[#232346] bg-gradient-to-r from-[#1a023f] to-[#232346]">
-            <button
-              className={`flex-1 py-4 text-lg font-bold transition-colors ${tab === 0 ? 'text-indigo-400 border-b-4 border-indigo-400 bg-[#232346]' : 'text-gray-300 hover:text-indigo-300'}`}
-              onClick={() => setTab(0)}
-            >Create Room</button>
-            <button
-              className={`flex-1 py-4 text-lg font-bold transition-colors ${tab === 1 ? 'text-indigo-400 border-b-4 border-indigo-400 bg-[#232346]' : 'text-gray-300 hover:text-indigo-300'}`}
-              onClick={() => setTab(1)}
-            >Settings</button>
-          </div>
-          <div className="p-8 bg-[#232346]">
-            <button
-              className="mb-6 flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-semibold text-base transition"
-              type="button"
-              onClick={() => onClose ? onClose() : navigate("/")}
-            >
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-              Back
-            </button>
-            {tab === 0 ? (
-              <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+        <div className="w-full max-w-2xl p-[1.5px] rounded-2xl bg-gradient-to-br from-[#3b1a6f] via-[#2a2a4a] to-[#0b0b1a] shadow-[0_10px_30px_rgba(0,0,0,0.45)] animate-fadeIn">
+          <div className="rounded-2xl bg-[#232346] overflow-hidden">
+            <div className="p-6 sm:p-8">
+              <div className="mb-6 sm:mb-8 flex items-center justify-between">
+                <button
+                  className="group inline-flex items-center gap-2 rounded-lg px-3 py-2 -ml-1 text-gray-300 hover:text-white hover:bg-[#2a2a4a] border border-transparent hover:border-[#35356a] transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  type="button"
+                  onClick={() => onClose ? onClose() : navigate("/")}
+                  aria-label="Back"
+                >
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" className="text-gray-400 group-hover:text-white transition-colors"><path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                  <span className="font-semibold">Back</span>
+                </button>
+                <div className="hidden sm:block" />
+              </div>
+
+              <div className="flex justify-center mb-6 sm:mb-8">
+                <div className="inline-flex rounded-full bg-[#1f1f3a] p-1 border border-[#2b2b4a]">
+                  <button
+                    className={`px-4 sm:px-6 h-9 sm:h-10 rounded-full text-sm sm:text-base font-semibold transition-colors ${tab === 0 ? 'bg-[#2a2a4a] text-white shadow-inner' : 'text-gray-300 hover:text-white'}`}
+                    onClick={() => setTab(0)}
+                    type="button"
+                  >Create</button>
+                  <button
+                    className={`px-4 sm:px-6 h-9 sm:h-10 rounded-full text-sm sm:text-base font-semibold transition-colors ${tab === 1 ? 'bg-[#2a2a4a] text-white shadow-inner' : 'text-gray-300 hover:text-white'}`}
+                    onClick={() => setTab(1)}
+                    type="button"
+                  >Settings</button>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-2 text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              {tab === 0 ? (
+                <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
                 <div>
-                  <label className="block text-gray-300 font-semibold mb-1">Room name</label>
+                    <label className="block text-gray-300 font-semibold mb-2">Room name</label>
                   <input
                     type="text"
                     name="name"
-                    className="w-full p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 border border-[#35356a] focus:bg-[#232346] transition-all duration-200 placeholder-gray-400"
+                      className="w-full p-3 rounded-lg bg-[#1f1f3a] text-white focus:outline-none focus:ring-2 focus:ring-pink-500/60 focus:border-pink-400 border border-[#35356a] transition-all duration-200 placeholder-gray-400"
                     placeholder="e.g. Friday Movie Night"
                     value={form.name}
                     onChange={handleChange}
                     maxLength={40}
                     required
                   />
+                    <div className="mt-1 text-right text-xs text-gray-400">{form.name.length}/40</div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 font-semibold mb-1">Description</label>
+                    <label className="block text-gray-300 font-semibold mb-2">Description</label>
                   <textarea
                     name="description"
-                    className="w-full p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 border border-[#35356a] focus:bg-[#232346] transition-all duration-200 placeholder-gray-400 min-h-[60px]"
+                      className="w-full p-3 rounded-lg bg-[#1f1f3a] text-white focus:outline-none focus:ring-2 focus:ring-pink-500/60 focus:border-pink-400 border border-[#35356a] transition-all duration-200 placeholder-gray-400 min-h-[80px]"
                     placeholder="What is this room about?"
                     value={form.description}
                     onChange={handleChange}
                     maxLength={120}
                   />
+                    <div className="mt-1 text-right text-xs text-gray-400">{form.description.length}/120</div>
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className="block text-gray-300 font-semibold mb-1">Room type</label>
+                      <label className="block text-gray-300 font-semibold mb-2">Room type</label>
                     <select
                       name="type"
-                      className="w-full p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 border border-[#35356a] focus:bg-[#232346] transition-all duration-200"
+                        className="w-full p-3 rounded-lg bg-[#1f1f3a] text-white focus:outline-none focus:ring-2 focus:ring-pink-500/60 focus:border-pink-400 border border-[#35356a] transition-all duration-200"
                       value={form.type}
                       onChange={handleChange}
                     >
@@ -142,10 +161,10 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
                     </select>
                   </div>
                   <div className="flex-1">
-                    <label className="block text-gray-300 font-semibold mb-1">Category</label>
+                      <label className="block text-gray-300 font-semibold mb-2">Category</label>
                     <select
                       name="category"
-                      className="w-full p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 border border-[#35356a] focus:bg-[#232346] transition-all duration-200"
+                        className="w-full p-3 rounded-lg bg-[#1f1f3a] text-white focus:outline-none focus:ring-2 focus:ring-pink-500/60 focus:border-pink-400 border border-[#35356a] transition-all duration-200"
                       value={form.category}
                       onChange={handleChange}
                     >
@@ -156,12 +175,12 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 font-semibold mb-1">Password {form.type === 'PUBLIC' ? <span className='text-xs text-gray-400'>(optional)</span> : <span className='text-xs text-gray-400'>(required)</span>}</label>
+                    <label className="block text-gray-300 font-semibold mb-2">Password {form.type === 'PUBLIC' ? <span className='text-xs text-gray-400'>(optional)</span> : <span className='text-xs text-gray-400'>(required)</span>}</label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
-                      className="w-full p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 border border-[#35356a] focus:bg-[#232346] transition-all duration-200 placeholder-gray-400 pr-12"
+                        className="w-full p-3 rounded-lg bg-[#1f1f3a] text-white focus:outline-none focus:ring-2 focus:ring-pink-500/60 focus:border-pink-400 border border-[#35356a] transition-all duration-200 placeholder-gray-400 pr-12"
                       placeholder={form.type === 'PUBLIC' ? "(optional)" : "Enter password"}
                       value={form.password}
                       onChange={handleChange}
@@ -169,7 +188,7 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400 text-sm"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400 text-sm"
                       tabIndex={-1}
                       onClick={() => setShowPassword(v => !v)}
                     >
@@ -178,11 +197,11 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 font-semibold mb-1">Max participants</label>
+                    <label className="block text-gray-300 font-semibold mb-2">Max participants</label>
                   <input
                     type="number"
                     name="maxParticipants"
-                    className="w-full p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 border border-[#35356a] focus:bg-[#232346] transition-all duration-200"
+                      className="w-full p-3 rounded-lg bg-[#1f1f3a] text-white focus:outline-none focus:ring-2 focus:ring-pink-500/60 focus:border-pink-400 border border-[#35356a] transition-all duration-200"
                     min={2}
                     max={10}
                     value={form.maxParticipants}
@@ -191,16 +210,15 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
                   />
                   <span className="text-gray-400 text-xs">from 2 to 10</span>
                 </div>
-                {error && <div className="text-red-400 text-sm text-center">{error}</div>}
-                <button type="submit" className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 rounded hover:opacity-90 transition text-lg mt-2">Create Room</button>
-              </form>
-            ) : (
-              <div className="flex flex-col gap-6">
+                  <button type="submit" className="w-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 rounded-lg hover:opacity-90 transition text-lg mt-2">Create Room</button>
+                </form>
+              ) : (
+                <div className="flex flex-col gap-6">
                 <div>
                   <label className="block text-gray-300 font-semibold mb-1">Who can control the queue?</label>
                   <select
                     name="queueControl"
-                    className="w-full p-3 rounded bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400 border border-[#35356a] focus:bg-[#232346] transition-all duration-200"
+                      className="w-full p-3 rounded-lg bg-[#1f1f3a] text-white focus:outline-none focus:ring-2 focus:ring-pink-500/60 focus:border-pink-400 border border-[#35356a] transition-all duration-200"
                     value={form.queueControl}
                     onChange={handleChange}
                   >
@@ -221,11 +239,12 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
                   />
                   <span className="text-gray-400 text-sm">{form.chatEnabled ? "On" : "Off"}</span>
                 </div>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+    </div>
     </div>
   );
 } 
