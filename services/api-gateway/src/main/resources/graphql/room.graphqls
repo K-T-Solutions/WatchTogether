@@ -4,38 +4,93 @@ extend type Query {
     # Получение комнаты по ID
     getRoomById(roomId: ID!): RoomResponse
 
-    # Получение всех комнат
-    getAllRooms: RoomListResponse
+    # Получение комнаты по владельцу
+    getRoomByOwnerId(ownerId: ID!): RoomResponse
+
+    # Получение всех публичных комнат
+    getAllPublicRooms: [RoomResponse]
 
     # Получение комнат по категории
-    getRoomsByCategory(category: RoomCategoryGrpc!): RoomListResponse
+    getRoomsByCategory(category: RoomCategory!): RoomListResponse!
 }
 
 extend type Mutation {
     # Создание новой комнаты
-    createRoom(request: CreateRoomRequest!): RoomResponse
+    createRoom(request: CreateRoomRequest!): CreateRoomResponse!
 
-    # Обновление существующей комнаты
-    updateRoom(input: UpdateRoomInput!): RoomResponse
+    # Добавление участника в комнату
+    addParticipantToRoom(roomId: ID!, participantId: ID!, password: String): Boolean
+
+    # Удаление участника из комнаты
+    removeParticipantFromRoom(roomId: ID!, participantId: ID!): Boolean
 }
 
 # ========== Основные типы ==========
-type Room {
-    id: ID!
-    name: String!
-    description: String!
-    type: RoomTypeGrpc!
-    category: RoomCategoryGrpc!
-    maxParticipants: Int!
+
+type RoomResponse {
+    roomId: ID!
     ownerId: ID!
+    roomName: String!
+    roomDescription: String
+    roomType: RoomType!
+    roomCategory: RoomCategory!
+    maxParticipants: Int!
+    needPassword: Boolean!
+#    participantIds: [ID!]!
+#    createdAt: String # ISO timestamp
+#    status: RoomStatus!
+#    # Дополнительные поля для UI
+#    participantCount: Int!
+#    canJoin: Boolean! # вычисляемое поле
 }
 
-enum RoomTypeGrpc {
-    PUBLIC
-    PRIVATE
+type RoomListResponse {
+    rooms: [RoomResponse!]!
+#    totalCount: Int!
 }
 
-enum RoomCategoryGrpc {
+type CreateRoomResponse {
+    success: Boolean!
+    message: String
+#    room: RoomResponse
+    # Коды ошибок для более точной обработки
+#    errorCode: CreateRoomErrorCode
+}
+
+type ParticipantResponse {
+    success: Boolean
+#    message: String
+#    currentParticipantCount: Int
+#    room: RoomResponse # возвращаем обновленную комнату
+#    errorCode: ParticipantErrorCode
+}
+
+# ========== Входные типы ==========
+
+input CreateRoomRequest {
+    ownerId: ID!
+    roomName: String!
+    roomDescription: String
+    roomType: RoomType!
+    roomCategory: RoomCategory!
+    roomPassword: String
+    maxParticipants: Int! # Обязательное поле, 0 = unlimited
+}
+
+#input AddParticipantRequest {
+#    roomId: ID!
+#    participantId: ID!
+#    password: String # если комната приватная
+#}
+
+input RemoveParticipantRequest {
+    roomId: ID!
+    participantId: ID!
+}
+
+# ========== Enums ==========
+
+enum RoomCategory {
     MOVIES
     SERIES
     ANIME
@@ -56,35 +111,33 @@ enum RoomCategoryGrpc {
     NONE
 }
 
-# ========== Входные типы ==========
-input CreateRoomRequest {
-    name: String!
-    description: String!
-    type: RoomTypeGrpc!
-    category: RoomCategoryGrpc!
-    password: String
-    maxParticipants: Int!
-    ownerId: ID!
+enum RoomType {
+    PUBLIC
+    PRIVATE
 }
 
-input UpdateRoomInput {
-    roomId: ID!
-    name: String
-    description: String
-    type: RoomTypeGrpc
-    category: RoomCategoryGrpc
-    ownerId: ID!
+enum RoomStatus {
+    ACTIVE
+    PAUSED
+    ENDED
 }
 
-# ========== Ответы ==========
-type RoomResponse {
-    room: Room
-#    success: Boolean!
-#    errorMessage: String
+# Коды ошибок для лучшего UX
+enum CreateRoomErrorCode {
+    INVALID_OWNER
+    ROOM_NAME_TAKEN
+    INVALID_CATEGORY
+    TOO_MANY_PARTICIPANTS
+    INSUFFICIENT_PERMISSIONS
 }
 
-type RoomListResponse {
-    rooms: [Room!]!
-#    success: Boolean!
-#    errorMessage: String
+enum ParticipantErrorCode {
+    ROOM_NOT_FOUND
+    PARTICIPANT_NOT_FOUND
+    ROOM_FULL
+    WRONG_PASSWORD
+    ALREADY_PARTICIPANT
+    NOT_PARTICIPANT
+    INSUFFICIENT_PERMISSIONS
+    ROOM_ENDED
 }
