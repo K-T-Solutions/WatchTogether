@@ -58,71 +58,31 @@ public class AuthController {
     }
 
     @MutationMapping
-    public UpdateUserCredResponse updateUserLogin(@Argument UUID userId, @Argument String newLogin) { //TODO: наверное не так надо обрабатывать
-        try {
-            var response = authGrpcClient.updateUserLogin(userId.toString(), newLogin);
-            return new UpdateUserCredResponse(response.getMessage());
-        } catch (Exception e) {
-            // Обрабатываем gRPC ошибки
-            String errorMessage = e.getMessage();
-            if (errorMessage.contains("ALREADY_EXISTS")) {
-                return new UpdateUserCredResponse("This login is already taken");
-            } else if (errorMessage.contains("NOT_FOUND")) {
-                return new UpdateUserCredResponse("User not found");
-            } else if (errorMessage.contains("ABORTED")) {
-                return new UpdateUserCredResponse("Invalid credentials");
-            } else {
-                return new UpdateUserCredResponse("Error updating login: " + errorMessage);
-            }
-        }
+    public UpdateUserCredResponse updateUserLogin(@Argument UUID userId, @Argument String newLogin) {
+        var response = authGrpcClient.updateUserLogin(userId.toString(), newLogin);
+        return new UpdateUserCredResponse(response.getMessage());
     }
 
     @MutationMapping
     public UpdateUserCredResponse updateUserEmail(@Argument UUID userId, @Argument String newLogin) { //TODO: refactor
-        try {
-            var response = authGrpcClient.updateUserEmail(userId.toString(), newLogin);
-            return new UpdateUserCredResponse(response.getMessage());
-        } catch (Exception e) {
-            // Обрабатываем gRPC ошибки
-            String errorMessage = e.getMessage();
-            if (errorMessage.contains("ALREADY_EXISTS")) {
-                return new UpdateUserCredResponse("This email is already taken");
-            } else if (errorMessage.contains("NOT_FOUND")) {
-                return new UpdateUserCredResponse("User not found");
-            } else if (errorMessage.contains("ABORTED")) {
-                return new UpdateUserCredResponse("Invalid credentials");
-            } else {
-                return new UpdateUserCredResponse("Error updating email: " + errorMessage);
-            }
-        }
+        var response = authGrpcClient.updateUserEmail(userId.toString(), newLogin);
+        return new UpdateUserCredResponse(response.getMessage());
     }
 
     @MutationMapping
     public UpdateUserCredResponse updateUserPassword(@Argument UUID userId, @Argument String oldPass, @Argument String newPass) {
-        try {
-            var response = authGrpcClient.updateUserPassword(userId.toString(), oldPass, newPass);
-            return new UpdateUserCredResponse(response.getMessage());
-        } catch (Exception e) {
-            // Обрабатываем gRPC ошибки
-            String errorMessage = e.getMessage();
-            if (errorMessage.contains("NOT_FOUND")) {
-                return new UpdateUserCredResponse("User not found");
-            } else if (errorMessage.contains("ABORTED")) {
-                return new UpdateUserCredResponse("Invalid current password");
-            } else {
-                return new UpdateUserCredResponse("Error updating password: " + errorMessage);
-            }
-        }
+        var response = authGrpcClient.updateUserPassword(userId.toString(), oldPass, newPass);
+        return new UpdateUserCredResponse(response.getMessage());
     }
 
     @QueryMapping
     public Boolean initiateEmailVerification(@Argument UUID userId) {
-        return authGrpcClient.initiateEmailVerification(userId.toString()).getResult(); //TODO: refactor
+        return authGrpcClient.initiateEmailVerification(userId.toString()).getResult();
     }
 
     @QueryMapping
     public Boolean finishEmailVerification(@Argument UUID userId, @Argument String code) {
-        return authGrpcClient.finishEmailVerification(userId.toString(), code).getResult(); //TODO: refactor
+        return authGrpcClient.finishEmailVerification(userId.toString(), code).getResult();
     }
 
     @QueryMapping
@@ -132,15 +92,11 @@ public class AuthController {
 
     @MutationMapping
     public UpdateUserCredResponse enableTwoFactor(@Argument UUID userId) {
-        try {
-            var response = authGrpcClient.enableTwoFactor(userId.toString());
-            if (response.getResult()) {
-                return new UpdateUserCredResponse(response.getMessage());
-            }
-            return new UpdateUserCredResponse("Error enabling 2FA: " + response.getMessage());
-        } catch (Exception e) {
-            return new UpdateUserCredResponse("Error enabling 2FA: " + e.getMessage());
+        var response = authGrpcClient.enableTwoFactor(userId.toString());
+        if (response.getResult()) {
+            return new UpdateUserCredResponse(response.getMessage());
         }
+        return new UpdateUserCredResponse("Error enabling 2FA: " + response.getMessage());
     }
 
     public record RegisterResponse(Boolean result, String message) {}
@@ -148,11 +104,4 @@ public class AuthController {
     public record AuthenticationResponse(boolean twoFactorRequired, String token) {}
 
     public record UpdateUserCredResponse(String message) {}
-
-//    public record UserCredResponse(String login,
-//                                   String email,
-//                                   boolean emailVerified,
-//                                   boolean enabled,
-//                                   String createdAt) {}
-
 }
