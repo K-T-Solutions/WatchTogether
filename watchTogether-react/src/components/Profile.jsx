@@ -64,7 +64,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
           <div className="text-gray-400 mb-6">Failed to load profile data. Please try again.</div>
           <button 
             onClick={() => refetch()}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors"
+            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors cursor-pointer"
           >
             Try Again
           </button>
@@ -127,7 +127,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                   {/* Кнопка Edit Profile */}
                   <button
                     onClick={handleEditProfile}
-                    className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition"
+                    className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition cursor-pointer"
                   >
                     Edit Profile
                   </button>
@@ -235,7 +235,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
                       <span className="text-gray-400 text-xs">@{friend.username}</span>
                       <button 
                         onClick={() => onViewUser(friend)}
-                        className="mt-2 text-xs text-indigo-400 hover:underline hover:text-indigo-300 transition-colors"
+                        className="mt-2 text-xs text-indigo-400 hover:underline hover:text-indigo-300 transition-colors cursor-pointer"
                       >
                         View
                       </button>
@@ -252,7 +252,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
               <div className="flex gap-4">
                 <button
                   onClick={onLogout}
-                  className="px-8 py-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition text-lg"
+                  className="px-8 py-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition text-lg cursor-pointer"
                 >
                   Log Out
                 </button>

@@ -47,7 +47,7 @@ export default function Home({ onLogin, onRegister, onProfile, isAuthenticated, 
               <p className="text-gray-400 text-base pr-32 md:text-lg mb-4">
                 WatchTogether creates synchronized viewing experiences with real-time reactions, voice chat, and interactive features that make distance disappear during your favorite shows and movies
               </p>
-              <a href="#host" className="gradient-border mt-2" onClick={e => { e.preventDefault(); onRoomCreate && onRoomCreate(); }}>
+              <a href="#host" className="gradient-border mt-2 cursor-pointer" onClick={e => { e.preventDefault(); onRoomCreate && onRoomCreate(); }}>
                 <span className="gradient-btn text-base md:text-lg font-bold px-6 py-2">Try Now</span>
               </a>
             </div>
@@ -137,9 +137,9 @@ export default function Home({ onLogin, onRegister, onProfile, isAuthenticated, 
             © {new Date().getFullYear()} WatchTogether. Все права защищены.
           </div>
           <div className="flex items-center space-x-6">
-            <a href="mailto:contact@watchtogether.com" className="text-gray-400 hover:text-white text-sm">contact@watchtogether.com</a>
-            <a href="https://t.me/yourtelegram" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white text-sm">Telegram</a>
-            <a href="https://github.com/yourgithub" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white text-sm">GitHub</a>
+            <a href="mailto:contact@watchtogether.com" className="text-gray-400 hover:text-white text-sm cursor-pointer">contact@watchtogether.com</a>
+            <a href="https://t.me/yourtelegram" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white text-sm cursor-pointer">Telegram</a>
+            <a href="https://github.com/yourgithub" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white text-sm cursor-pointer">GitHub</a>
             {/* Добавьте другие соцсети или контакты по желанию */}
           </div>
         </div>
