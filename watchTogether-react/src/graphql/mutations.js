@@ -30,4 +30,14 @@ export const UPDATE_USER_PASSWORD = gql`
       message
     }
   }
+`;
+
+// Мутация для создания комнаты
+export const CREATE_ROOM = gql`
+  mutation CreateRoom($input: CreateRoomRequest!) {
+    createRoom(input: $input) {
+      success
+      message
+    }
+  }
 `; 
