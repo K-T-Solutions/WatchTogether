@@ -1,8 +1,8 @@
 package com.watchtogether.roomservice.repository;
 
 import com.watchtogether.grpc.RoomCategory;
+import com.watchtogether.grpc.RoomType;
 import com.watchtogether.roomservice.entity.ActiveRoomEntity;
-import com.watchtogether.roomservice.enums.RoomType;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
