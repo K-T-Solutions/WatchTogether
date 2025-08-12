@@ -12,4 +12,22 @@ export const GET_USER_PROFILE = gql`
       joinDate
     }
   }
+`;
+
+// Запрос для получения всех публичных комнат
+export const GET_ALL_PUBLIC_ROOMS = gql`
+  query GetAllPublicRooms {
+    getAllPublicRooms {
+      roomId
+      ownerId
+      roomName
+      roomDescription
+      roomType
+      roomCategory
+      maxParticipants
+      needPassword
+      participantsNumber
+      createdAt
+    }
+  }
 `; 
