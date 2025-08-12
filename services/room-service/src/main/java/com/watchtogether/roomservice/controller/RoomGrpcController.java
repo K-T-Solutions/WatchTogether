@@ -1,10 +1,11 @@
 package com.watchtogether.roomservice.controller;
 
 import com.google.protobuf.Empty;
+import com.google.protobuf.Timestamp;
 import com.watchtogether.roomservice.entity.ActiveRoomEntity;
+import com.watchtogether.roomservice.service.invitation.InvitationService;
 import com.watchtogether.roomservice.service.room.IRoomService;
 import com.watchtogether.grpc.*;
-import io.grpc.ServerInterceptor;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +20,12 @@ import java.util.List;
 public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.RoomServiceImplBase {
 
     private final IRoomService roomService;
+    private final InvitationService invitationService;
 
     @Override
-    public void getRoomById(GetRoomByIdRequest request, StreamObserver<RoomResponse> responseObserver) {
+    public void getRoomById(GetRoomByIdRequest request,
+                            StreamObserver<RoomResponse> responseObserver
+    ) {
         var roomEntity = roomService.findRoomById(request.getRoomId());
         responseObserver.onNext(RoomResponse.newBuilder()
                         .setRoomId(roomEntity.getId())
@@ -32,22 +36,27 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
                         .setRoomCategory(roomEntity.getCategory())
                         .setMaxParticipants(roomEntity.getMaxParticipants())
                         .setNeedPassword(!roomEntity.getPasswordHash().isEmpty())
+                        .setParticipantNumber(roomEntity.getParticipantIds().size())
+                        .setCreatedAt(Timestamp.newBuilder()
+                                .setSeconds(roomEntity.getCreatedAt().getEpochSecond())
+                                .setNanos(roomEntity.getCreatedAt().getNano())
+                                .build())
                         .build());
         responseObserver.onCompleted();
     }
 
     @Override
-    public void getRoomByOwnerId(GetRoomByOwnerIdRequest request, StreamObserver<RoomResponse> responseObserver) {
+    public void getRoomByOwnerId(GetRoomByOwnerIdRequest request,
+                                 StreamObserver<RoomResponse> responseObserver
+    ) {
         super.getRoomByOwnerId(request, responseObserver);
     }
 
     @Override
-    public void getAllPublicRooms(Empty request, StreamObserver<RoomListResponse> responseObserver) {
-
+    public void getAllPublicRooms(Empty request,
+                                  StreamObserver<RoomListResponse> responseObserver
+    ) {
         List<ActiveRoomEntity> publicRooms = roomService.findAllPublicRooms();
-
-        log.info("Rooms name: {}", publicRooms.getFirst().getName());
-
         responseObserver.onNext(RoomListResponse.newBuilder()
                         .addAllRooms(publicRooms
                                 .stream()
@@ -58,10 +67,24 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
     }
 
     @Override
-    public void createRoom(CreateRoomRequest request, StreamObserver<CreateRoomResponse> responseObserver) {
+    public void getRoomsByCategory(GetRoomsByCategoryRequest request,
+                                   StreamObserver<RoomListResponse> responseObserver
+    ) {
+        List<ActiveRoomEntity> roomList = roomService.findAllRoomsByCategory(request.getRoomCategory());
+        responseObserver.onNext(RoomListResponse.newBuilder()
+                .addAllRooms(roomList
+                        .stream()
+                        .map(this::mapToGrpcRoomResponse)
+                        .toList())
+                .build());
+        responseObserver.onCompleted();
+    }
 
-
-        var createdRoom = roomService.createRoom(request); //TODO: add exception handle
+    @Override
+    public void createRoom(CreateRoomRequest request,
+                           StreamObserver<CreateRoomResponse> responseObserver
+    ) {
+        var createdRoom = roomService.createRoom(request); //TODO: ??
         responseObserver.onNext(CreateRoomResponse.newBuilder()
                         .setSuccess(true)
                         .setMessage("Room created successfully")
@@ -70,7 +93,9 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
     }
 
     @Override
-    public void addParticipantToRoom(AddParticipantRequest request, StreamObserver<AddParticipantResponse> responseObserver) { //TODO: ну тут как то надо все же проверять
+    public void addParticipantToRoom(AddParticipantRequest request,
+                                     StreamObserver<AddParticipantResponse> responseObserver
+    ) { //TODO: ну тут как то надо все же проверять
 
         boolean success;
 
@@ -91,12 +116,34 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
     }
 
     @Override
-    public void removeParticipantFromRoom(RemoveParticipantRequest request, StreamObserver<RemoveParticipantResponse> responseObserver) {
+    public void removeParticipantFromRoom(RemoveParticipantRequest request,
+                                          StreamObserver<RemoveParticipantResponse> responseObserver
+    ) {
         boolean success = roomService.removeParticipantFromRoom(request.getRoomId(), request.getParticipantId()); //TODO: ловить искл.
         responseObserver.onNext(RemoveParticipantResponse.newBuilder()
                 .setSuccess(success)
                 .setMessage(success ? "Participant removed successfully" : "Participant not removed")
                 .build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void generateInvitation(GenerateInvitationRequest request, StreamObserver<GenerateInvitationResponse> responseObserver) {
+
+        String code = invitationService.generateInvitation(request);
+
+        responseObserver.onNext(GenerateInvitationResponse.newBuilder()
+                        .setSuccess(true)
+                        .setLink(code) //TODO: переделывать в ссылку
+                        .build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void joinRoomByInvite(JoinRoomByInviteRequest request, StreamObserver<JoinRoomByInviteResponse> responseObserver) {
+
+        boolean result = invitationService.joinRoomByInvite(request.getInviteCode(), request.getUserId());
+        responseObserver.onNext(JoinRoomByInviteResponse.newBuilder().setSuccess(result).build());
         responseObserver.onCompleted();
     }
 
@@ -110,6 +157,11 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
                 .setRoomCategory(entity.getCategory())
                 .setMaxParticipants(entity.getMaxParticipants())
                 .setNeedPassword(!entity.getPasswordHash().isEmpty())
+                .setParticipantNumber(entity.getParticipantIds().size())
+                .setCreatedAt(Timestamp.newBuilder()
+                        .setSeconds(entity.getCreatedAt().getEpochSecond())
+                        .setNanos(entity.getCreatedAt().getNano())
+                        .build())
 //                .addAllParticipantIds(entity.getParticipantIds()) // если есть список участников
 //                .setCreatedAt(Timestamp.newBuilder()
 //                        .setSeconds(entity.getCreatedAt().getEpochSecond())
@@ -118,6 +170,8 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
 //                .setStatus(mapStatusToGrpc(entity.getStatus()))
                 .build();
     }
+
+
 
 
 

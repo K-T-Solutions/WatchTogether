@@ -2,13 +2,14 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 option java_multiple_files = true;
 option java_package = "com.watchtogether.grpc";
 option java_outer_classname = "RoomServiceProto";
 
 // Room service for managing watch-together rooms
-service RoomService { //TODO: добавить получение по категории
+service RoomService {
   // Get room by ID
   rpc GetRoomById(GetRoomByIdRequest) returns (RoomResponse);
 
@@ -18,6 +19,9 @@ service RoomService { //TODO: добавить получение по кате�
   // Get all public rooms
   rpc GetAllPublicRooms(google.protobuf.Empty) returns (RoomListResponse);
 
+  // Get all rooms by category
+  rpc GetRoomsByCategory(GetRoomsByCategoryRequest) returns (RoomListResponse);
+
   // Create new room
   rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
 
@@ -26,6 +30,11 @@ service RoomService { //TODO: добавить получение по кате�
 
   // Remove participant from room
   rpc RemoveParticipantFromRoom(RemoveParticipantRequest) returns (RemoveParticipantResponse);
+
+  rpc GenerateInvitation(GenerateInvitationRequest) returns (GenerateInvitationResponse);
+
+  rpc JoinRoomByInvite(JoinRoomByInviteRequest) returns (JoinRoomByInviteResponse);
+
 }
 
 // Requests
@@ -35,6 +44,10 @@ message GetRoomByIdRequest {
 
 message GetRoomByOwnerIdRequest {
   string owner_id = 1;
+}
+
+message GetRoomsByCategoryRequest {
+  RoomCategory room_category = 1;
 }
 
 message CreateRoomRequest {
@@ -58,6 +71,18 @@ message RemoveParticipantRequest {
   string participant_id = 2;
 }
 
+message GenerateInvitationRequest {
+  string room_id = 1;
+  string creator_id = 2;
+  google.protobuf.Duration duration_secs = 3;
+  int32 max_uses = 4;
+}
+
+message JoinRoomByInviteRequest {
+  string invite_code = 1;
+  string user_id = 2;
+}
+
 // Responses
 message RoomResponse {
   string room_id = 1;
@@ -68,6 +93,8 @@ message RoomResponse {
   RoomCategory room_category = 6;
   int32 max_participants = 7;
   bool needPassword = 8;
+  int32 participant_number = 9;
+  google.protobuf.Timestamp created_at = 10;
   //  repeated string participant_ids = 8;
   //  google.protobuf.Timestamp created_at = 9;
   //  RoomStatus status = 10; // надо или нет?
@@ -94,6 +121,15 @@ message RemoveParticipantResponse {
   bool success = 1;
   string message = 2;
   int32 current_participant_count = 3;
+}
+
+message GenerateInvitationResponse {
+  bool success = 1;
+  string link = 2;
+}
+
+message JoinRoomByInviteResponse {
+  bool success = 1; //TODO: change
 }
 
 // Enums
