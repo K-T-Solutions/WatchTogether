@@ -1,12 +1,17 @@
-//package com.watchtogether.roomservice.service.invitation;
-//
-//import com.watchtogether.roomservice.entity.InvitationEntity;
-//import com.watchtogether.roomservice.request.GenerateInviteRequest;
-//
-//import java.util.UUID;
-//
-//public interface IInvitationService {
-//    InvitationEntity generateInvitation(GenerateInviteRequest request);
-//
-//    boolean validateInvitation(UUID roomId, String token);
-//}
+package com.watchtogether.roomservice.service.invitation;
+
+
+import com.watchtogether.grpc.GenerateInvitationRequest;
+import com.watchtogether.roomservice.entity.InvitationEntity;
+
+import java.util.UUID;
+
+public interface IInvitationService {
+
+
+    InvitationEntity findByCode(String code);
+
+    String generateInvitation(GenerateInvitationRequest request);
+
+    boolean joinRoomByInvite(String code, String userId);
+}
