@@ -1,6 +1,7 @@
 package com.watchtogether.roomservice.service.room;
 
 import com.watchtogether.grpc.CreateRoomRequest;
+import com.watchtogether.grpc.RoomCategory;
 import com.watchtogether.grpc.RoomType;
 import com.watchtogether.roomservice.entity.ActiveRoomEntity;
 import com.watchtogether.roomservice.exception.RoomNotFoundException;
@@ -47,6 +48,11 @@ public class RoomService implements IRoomService {
     @Override
     public List<ActiveRoomEntity> findAllPublicRooms() {
         return roomRepository.findAllByType(RoomType.PUBLIC);
+    }
+
+    @Override
+    public List<ActiveRoomEntity> findAllRoomsByCategory(RoomCategory roomCategory) {
+        return roomRepository.findAllByCategory(roomCategory);
     }
 
     @Override

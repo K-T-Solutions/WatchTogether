@@ -1,6 +1,7 @@
 package com.watchtogether.roomservice.service.room;
 
 import com.watchtogether.grpc.CreateRoomRequest;
+import com.watchtogether.grpc.RoomCategory;
 import com.watchtogether.roomservice.entity.ActiveRoomEntity;
 
 import java.util.List;
@@ -13,6 +14,8 @@ public interface IRoomService {
     List<ActiveRoomEntity> findAllPublicRooms();
 
     ActiveRoomEntity createRoom(CreateRoomRequest grpcRequest);
+
+    List<ActiveRoomEntity> findAllRoomsByCategory(RoomCategory roomCategory);
 
     boolean addParticipantToRoom(String roomId, String participantId);
 
