@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateRoomRequest {
+public class CreateRoomInput {
     private String ownerId;
     private String roomName;
     private String  roomDescription;
