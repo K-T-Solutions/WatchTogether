@@ -1,9 +1,11 @@
 package com.watchtogether.roomservice.entity;
 
 import com.watchtogether.grpc.RoomCategory;
+import com.watchtogether.grpc.RoomParticipant;
 import com.watchtogether.grpc.RoomType;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.TimeToLive;
@@ -11,10 +13,12 @@ import org.springframework.data.redis.core.index.Indexed;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.io.Serializable;
 
+@Slf4j
 @Getter
 @Setter
 @RedisHash(value = "active_room")
@@ -39,10 +43,7 @@ public class ActiveRoomEntity implements Serializable {
     private int maxParticipants = 20;
 
     // Активные участники (кто сейчас в комнате)
-    private Set<String> participantIds = new HashSet<>();
-
-    // Модераторы
-    private Set<String> moderatorIds = new HashSet<>();
+    private Set<RoomParticipantEntity> participants = new HashSet<>();
 
     // Забаненные пользователи
     private Set<String> bannedUserIds = new HashSet<>();
@@ -67,14 +68,13 @@ public class ActiveRoomEntity implements Serializable {
 
     // ОБЯЗАТЕЛЬНЫЙ конструктор по умолчанию для Spring Data
     public ActiveRoomEntity() {
-        this.participantIds = new HashSet<>();
-        this.moderatorIds = new HashSet<>();
+        this.participants = new HashSet<>();
         this.bannedUserIds = new HashSet<>();
         this.tags = new HashSet<>();
     }
 
     // Конструктор для создания новой комнаты
-    public ActiveRoomEntity(String ownerId,
+    public ActiveRoomEntity(RoomParticipantEntity owner,
                             String name,
                             String description,
                             RoomType type,
@@ -83,7 +83,7 @@ public class ActiveRoomEntity implements Serializable {
                             int maxParticipants) {
         this(); // Вызываем конструктор по умолчанию для инициализации коллекций
         this.id = UUID.randomUUID().toString(); //TODO: надо как-то убеждаться что он не будет повторяться
-        this.ownerId = ownerId;
+        this.ownerId = owner.userId;
         this.name = name;
         this.description = description;
         this.type = type;
@@ -94,34 +94,60 @@ public class ActiveRoomEntity implements Serializable {
         this.lastActivity = Instant.now();
 
         // Владелец автоматически становится участником и модератором
-        this.participantIds.add(ownerId);
-        this.moderatorIds.add(ownerId);
+        this.participants.add(owner);
     }
 
+    @Getter
+    @Setter
+    public static class RoomParticipantEntity implements Serializable {
+
+        private String userId;
+
+        private String displayName;
+
+//    private ParticipantRole role;
+
+        private Instant joinedAt;
+
+        public RoomParticipantEntity() {}
+
+        public RoomParticipantEntity(String userId, String displayName) {
+            this.userId = userId;
+            this.displayName = displayName;
+            this.joinedAt = Instant.now();
+        }
+
+        public RoomParticipantEntity(RoomParticipant grpcRequest) {
+            this.userId = grpcRequest.getUserId();
+            this.displayName = grpcRequest.getDisplayName();
+            this.joinedAt = Instant.now();
+        }
+
+    }
+
+
     // Вспомогательные методы для работы с участниками
-    public void addParticipant(String userId) {
-        this.participantIds.add(userId);
+    public void addParticipant(RoomParticipantEntity participant) {
+        this.participants.add(participant);
         updateLastActivity();
     }
 
     public void removeParticipant(String userId) {
-        this.participantIds.remove(userId);
-        // Если это был модератор, тоже убираем
-        this.moderatorIds.remove(userId);
+        this.participants.removeIf(participant -> participant.getUserId().equals(userId));
         updateLastActivity();
     }
 
     public boolean isEmpty() {
-        return participantIds.isEmpty();
+        return participants.isEmpty();
     }
 
-    public boolean isOwner(String userId) {
-        return ownerId.equals(userId);
-    }
+//    public boolean isOwner(String userId) {
+//        return ownerId.equals(userId);
+//    }
 
-    public boolean isModerator(String userId) {
-        return moderatorIds.contains(userId);
-    }
+//    public boolean isModerator(String userId) {
+//        return moderatorIds.contains(userId);
+//    }
 
     public boolean isBanned(String userId) {
         return bannedUserIds.contains(userId);
@@ -129,6 +155,15 @@ public class ActiveRoomEntity implements Serializable {
 
     public void updateLastActivity() {
         this.lastActivity = Instant.now();
+    }
+
+    public RoomParticipantEntity getParticipant(String userId) {
+        return this.participants
+                .stream()
+                .filter(participant ->
+                        Objects.equals(participant.getUserId(), userId)) // Безопасное сравнение
+                .findFirst()
+                .orElse(null);
     }
 
     // Проверка, нужно ли отправлять уведомление о продлении
@@ -161,4 +196,7 @@ public class ActiveRoomEntity implements Serializable {
     public boolean isPublic() {
         return this.type == RoomType.PUBLIC;
     }
+
+
+
 }
