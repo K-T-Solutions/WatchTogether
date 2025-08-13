@@ -7,10 +7,10 @@ import net.devh.boot.grpc.server.advice.GrpcExceptionHandler;
 @GrpcAdvice
 public class GlobalGrpcExceptionHandler {
 
-    @GrpcExceptionHandler(InvalidTokenException.class)
-    public Status handleInvalidTokenException(InvalidTokenException e) {
+    @GrpcExceptionHandler(InvalidInvitationException.class)
+    public Status handleInvalidTokenException(InvalidInvitationException e) {
         return Status.INVALID_ARGUMENT.withDescription(e.getMessage()).withCause(e);
-    }
+    } //TODO: почему то искл. не обрабатывается
 
     @GrpcExceptionHandler(NotRoomMemberException.class)
     public Status handleNotRoomMemberException(NotRoomMemberException e) {
