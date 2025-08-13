@@ -64,7 +64,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
           <div className="text-gray-400 mb-6">Failed to load profile data. Please try again.</div>
           <button 
             onClick={() => refetch()}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors"
+            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors cursor-pointer"
           >
             Try Again
           </button>
@@ -97,6 +97,7 @@ export default function Profile({ currentUser, onClose, onLogout, onViewUser }) 
             <h1 className="text-white text-4xl font-bold mb-4">Your Profile</h1>
             <p className="text-gray-400 text-lg">Manage your account settings and social connections</p>
           </div>
+
 
           {/* Трехколоночный макет: слева — профиль, центр — контент, справа — панель ачивок */}
           <div className="grid grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)_300px] gap-6 xl:gap-8">

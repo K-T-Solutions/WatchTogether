@@ -645,7 +645,7 @@ export default function Settings({ currentUser, onLogout }) {
           <div className="text-gray-400 mb-6">Failed to load settings data. Please try again.</div>
           <button 
             onClick={() => refetch()}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors"
+            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors cursor-pointer"
           >
             Try Again
           </button>
@@ -670,7 +670,7 @@ export default function Settings({ currentUser, onLogout }) {
               alt="Avatar" 
               className="w-24 h-24 rounded-full border-4 border-indigo-500"
             />
-            <button className="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-full transition-colors shadow-lg">
+            <button className="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-full transition-colors shadow-lg cursor-pointer">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
@@ -740,7 +740,7 @@ export default function Settings({ currentUser, onLogout }) {
           <button
             onClick={handleSavePublicProfile}
             disabled={updateLoading || !hasUnsavedChanges}
-            className={`bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg transition ${
+            className={`bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg transition cursor-pointer ${
               updateLoading || !hasUnsavedChanges ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
             }`}
           >
@@ -756,7 +756,7 @@ export default function Settings({ currentUser, onLogout }) {
           <button
             onClick={handleCancelPublicProfile}
             disabled={updateLoading}
-            className={`px-6 py-3 bg-[#232346] text-white font-medium rounded-lg transition ${
+            className={`px-6 py-3 bg-[#232346] text-white font-medium rounded-lg transition cursor-pointer ${
               updateLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#2a2a4a]'
             }`}
           >
@@ -794,53 +794,21 @@ export default function Settings({ currentUser, onLogout }) {
           )}
         </div>
 
-        {showLoginForm && (
-          <div className="mt-6 border-t border-[#232346] pt-6">
-            <label className="block text-gray-400 text-sm font-medium mb-2">New username</label>
-            <input
-              type="text"
-              name="username"
-              value={accountData.username}
-              onChange={handleAccountChange}
-              className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter new username"
-            />
-            <div className="flex items-center gap-3 mt-4">
-              <button
-                onClick={handleSaveAccount}
-                disabled={updateLoginLoading}
-                className="h-10 px-5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {updateLoginLoading ? 'Updating…' : 'Update username'}
-              </button>
-              <button
-                onClick={() => setShowLoginForm(false)}
-                disabled={updateLoginLoading}
-                className="h-10 px-5 rounded-md bg-[#232346] hover:bg-[#2a2a4a] text-white border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Change Password (GitHub-like) */}
-      <div className="bg-[#181828] rounded-2xl border border-[#232346] p-6">
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <h3 className="text-white text-lg font-semibold">Change password</h3>
-            <p className="text-gray-400 text-sm mt-1">A strong password helps keep your account secure.</p>
-          </div>
-          {!showPasswordForm && (
-            <button
-              onClick={handleShowPasswordForm}
-              disabled={updatePasswordLoading}
-              className="shrink-0 h-10 px-4 rounded-md bg-[#232346] text-white hover:bg-[#2a2a4a] border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Change password
-            </button>
-          )}
+        <div className="mt-6 flex flex-wrap gap-4">
+          <button
+            onClick={handleShowLoginForm}
+            disabled={updateLoginLoading || updatePasswordLoading}
+            className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <span>Update Login</span>
+          </button>
+          <button
+            onClick={handleShowPasswordForm}
+            disabled={updateLoginLoading || updatePasswordLoading}
+            className="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <span>Update Password</span>
+          </button>
         </div>
 
         {showPasswordForm && (
@@ -916,22 +884,40 @@ export default function Settings({ currentUser, onLogout }) {
               <span>{isEmailVerified ? 'Email verified' : 'Email not verified'}</span>
             </div>
           </div>
-
-          {!isEmailVerified && (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={async () => { const sent = await handleSendEmailCode(); if (sent) setShowEmailModal(true); }}
-                disabled={cooldown > 0 || isSending}
-                className={`h-10 px-5 rounded-md font-semibold transition ${
-                  cooldown > 0 || isSending
-                    ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
-                    : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                }`}
-              >
-                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Verify email'}
-              </button>
-            </div>
-          )}
+          <div className="flex-1 flex items-center gap-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Enter code"
+              value={emailCode}
+              onChange={(e) => setEmailCode(e.target.value)}
+              disabled={isEmailVerified}
+              className="flex-1 p-3 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              onClick={handleSendEmailCode}
+              disabled={isEmailVerified || cooldown > 0 || isSending}
+              className={`px-4 py-3 rounded-lg font-semibold transition cursor-pointer ${
+                isEmailVerified || cooldown > 0 || isSending
+                ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
+                : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+              }`}
+            >
+              {cooldown > 0 ? `Resend (${cooldown}s)` : 'Send code'}
+            </button>
+            <button
+              onClick={handleVerifyEmailCode}
+              disabled={isEmailVerified || !emailCode.trim()}
+              className={`px-4 py-3 rounded-lg font-semibold transition cursor-pointer ${
+                isEmailVerified || !emailCode.trim()
+                ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+              }`}
+            >
+              Verify
+            </button>
+          </div>
         </div>
 
         <div className="h-px bg-[#232346]" />
@@ -954,7 +940,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={() => enableTwoFactor({ variables: { userId } })}
               disabled={!isEmailVerified || enable2faLoading}
-              className={`inline-flex items-center gap-2 font-semibold py-3 px-5 rounded-lg transition ${
+              className={`inline-flex items-center gap-2 font-semibold py-3 px-5 rounded-lg transition cursor-pointer ${
                 !isEmailVerified || enable2faLoading
                   ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-tr from-indigo-500 to-pink-500 text-white hover:opacity-90'
@@ -1008,12 +994,8 @@ export default function Settings({ currentUser, onLogout }) {
               </div>
             </div>
             <button
-              role="switch"
-              aria-checked={notificationPrefs.friendRequests}
-              onClick={() => setNotificationPrefs((p) => ({ ...p, friendRequests: !p.friendRequests }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notificationPrefs.friendRequests ? 'bg-indigo-600' : 'bg-[#232346]'
-              }`}
+              onClick={() => setShowLoginForm(false)}
+              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
               <span
                 className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
@@ -1022,23 +1004,25 @@ export default function Settings({ currentUser, onLogout }) {
               />
             </button>
           </div>
-
-          {/* Room invites */}
-          <div className="py-4 flex items-center justify-between gap-6">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">🎥</div>
-              <div>
-                <div className="text-white font-medium">Room invites</div>
-                <div className="text-gray-400 text-sm">Be alerted when you are invited to a room</div>
-              </div>
-            </div>
+          <div className="flex gap-4">
             <button
-              role="switch"
-              aria-checked={notificationPrefs.roomInvites}
-              onClick={() => setNotificationPrefs((p) => ({ ...p, roomInvites: !p.roomInvites }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notificationPrefs.roomInvites ? 'bg-indigo-600' : 'bg-[#232346]'
-              }`}
+              onClick={handleSaveAccount}
+              disabled={updateLoginLoading}
+              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {updateLoginLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Updating...</span>
+                </div>
+              ) : (
+                'Update Username'
+              )}
+            </button>
+            <button
+              onClick={() => setShowLoginForm(false)}
+              disabled={updateLoginLoading}
+              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <span
                 className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
@@ -1058,12 +1042,8 @@ export default function Settings({ currentUser, onLogout }) {
               </div>
             </div>
             <button
-              role="switch"
-              aria-checked={notificationPrefs.messages}
-              onClick={() => setNotificationPrefs((p) => ({ ...p, messages: !p.messages }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notificationPrefs.messages ? 'bg-indigo-600' : 'bg-[#232346]'
-              }`}
+              onClick={() => setShowPasswordForm(false)}
+              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
               <span
                 className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
@@ -1073,22 +1053,25 @@ export default function Settings({ currentUser, onLogout }) {
             </button>
           </div>
 
-          {/* Mentions */}
-          <div className="py-4 flex items-center justify-between gap-6">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">📣</div>
-              <div>
-                <div className="text-white font-medium">Mentions</div>
-                <div className="text-gray-400 text-sm">Notify me when someone mentions me</div>
-              </div>
-            </div>
+          <div className="flex gap-4">
             <button
-              role="switch"
-              aria-checked={notificationPrefs.mentions}
-              onClick={() => setNotificationPrefs((p) => ({ ...p, mentions: !p.mentions }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notificationPrefs.mentions ? 'bg-indigo-600' : 'bg-[#232346]'
-              }`}
+              onClick={handleSaveAccount}
+              disabled={updatePasswordLoading}
+              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {updatePasswordLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Updating...</span>
+                </div>
+              ) : (
+                'Update Password'
+              )}
+            </button>
+            <button
+              onClick={() => setShowPasswordForm(false)}
+              disabled={updatePasswordLoading}
+              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <span
                 className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
@@ -1127,9 +1110,8 @@ export default function Settings({ currentUser, onLogout }) {
             <div className="mb-4">
               <button
                 onClick={() => navigate('/profile')}
-                className="group inline-flex items-center gap-4 text-left text-white focus:outline-none"
-                aria-label="Back to profile"
-              >
+                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+           >
                 <svg className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
@@ -1147,7 +1129,7 @@ export default function Settings({ currentUser, onLogout }) {
                   <button
                     key={item.id}
                     onClick={() => setActiveSection(item.id)}
-                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors ${
+                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors cursor-pointer ${
                       activeSection === item.id
                         ? 'bg-indigo-500 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-[#232346]'

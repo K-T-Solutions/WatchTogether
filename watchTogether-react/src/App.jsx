@@ -13,6 +13,7 @@ import RoomCreateModal from './components/RoomCreateModal';
 import Messenger from './components/Messenger';
 import About from './components/About';
 import Rooms from './components/Rooms';
+import Room from './components/Room';
 import './App.css'
 
 export default function App() {
@@ -165,6 +166,12 @@ export default function App() {
             currentUser={currentUser}
             onLogout={handleLogout}
             onRoomCreate={openRoomCreate}
+          />
+        } />
+        <Route path="/room/:roomId" element={
+          <Room 
+            currentUser={currentUser}
+            onLogout={handleLogout}
           />
         } />
         <Route path="/profile" element={

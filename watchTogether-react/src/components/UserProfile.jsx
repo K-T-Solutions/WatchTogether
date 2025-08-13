@@ -112,7 +112,7 @@ export default function UserProfile({ user, currentUser, onClose, onLogout }) {
                   <div className="flex gap-4 pt-4">
                     <button
                       onClick={handleFollow}
-                      className={`px-6 py-3 rounded-lg font-medium transition ${
+                      className={`px-6 py-3 rounded-lg font-medium transition cursor-pointer ${
                         isFollowing 
                           ? 'bg-gray-600 text-white hover:bg-gray-700' 
                           : 'bg-gradient-to-tr from-indigo-500 to-pink-500 text-white hover:opacity-90'
@@ -122,11 +122,11 @@ export default function UserProfile({ user, currentUser, onClose, onLogout }) {
                     </button>
                     <button
                       onClick={handleAddFriend}
-                      className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition"
+                      className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition cursor-pointer"
                     >
                       Add Friend
                     </button>
-                    <button className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition">
+                    <button className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition cursor-pointer">
                       Message
                     </button>
                   </div>
@@ -163,7 +163,7 @@ export default function UserProfile({ user, currentUser, onClose, onLogout }) {
                       <div key={idx} className="flex flex-col items-center bg-[#232346] rounded-lg p-4 w-32">
                         <img src={friend.avatar} alt={friend.username} className="w-14 h-14 rounded-full mb-2 border-2 border-indigo-400" />
                         <span className="text-white font-medium text-sm">{friend.username}</span>
-                        <button className="mt-2 text-xs text-indigo-400 hover:underline">View</button>
+                        <button className="mt-2 text-xs text-indigo-400 hover:underline cursor-pointer">View</button>
                       </div>
                     ))
                   ) : (
@@ -177,7 +177,7 @@ export default function UserProfile({ user, currentUser, onClose, onLogout }) {
             <div className="p-8 border-t border-[#232346]">
               <button
                 onClick={onClose}
-                className="w-full bg-[#232346] text-white font-medium py-4 rounded-lg hover:bg-[#2a2a4a] transition text-lg"
+                className="w-full bg-[#232346] text-white font-medium py-4 rounded-lg hover:bg-[#2a2a4a] transition text-lg cursor-pointer"
               >
                 Close
               </button>

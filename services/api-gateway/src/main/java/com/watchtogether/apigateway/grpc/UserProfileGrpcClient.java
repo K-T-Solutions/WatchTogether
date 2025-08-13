@@ -1,6 +1,6 @@
 package com.watchtogether.apigateway.grpc;
 
-import com.watchtogether.apigateway.graphql.input.UpdateUserProfileRequest;
+import com.watchtogether.apigateway.graphql.input.UpdateUserProfileInput;
 import com.watchtogether.grpc.UserServiceGrpc;
 import com.watchtogether.grpc.UserServiceProto;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -20,7 +20,7 @@ public class UserProfileGrpcClient {
                         .build());
     }
 
-    public UserServiceProto.UserResponseGrpc updateUserProfileById(UpdateUserProfileRequest request) {
+    public UserServiceProto.UserResponseGrpc updateUserProfileById(UpdateUserProfileInput request) {
         return blockingStub.updateUserProfileById(
                 UserServiceProto.UpdateUserProfileRequestGrpc
                         .newBuilder()

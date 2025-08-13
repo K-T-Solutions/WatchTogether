@@ -37,7 +37,7 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 hover:bg-[#232346] rounded-lg px-3 py-2 transition-colors"
+        className="flex items-center space-x-3 hover:bg-[#232346] rounded-lg px-3 py-2 transition-colors cursor-pointer"
       >
         <img 
           src={currentUser.avatar} 
@@ -76,7 +76,7 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
           <div className="py-1">
             <button 
               onClick={handleProfileClick}
-              className="w-full text-left px-4 py-2 text-gray-300 hover:bg-[#232346] hover:text-white transition-colors flex items-center space-x-3"
+              className="w-full text-left px-4 py-2 text-gray-300 hover:bg-[#232346] hover:text-white transition-colors flex items-center space-x-3 cursor-pointer"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -99,7 +99,7 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
 
             <button 
               onClick={onLogout}
-              className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#232346] hover:text-red-300 transition-colors flex items-center space-x-3"
+              className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#232346] hover:text-red-300 transition-colors flex items-center space-x-3 cursor-pointer"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
