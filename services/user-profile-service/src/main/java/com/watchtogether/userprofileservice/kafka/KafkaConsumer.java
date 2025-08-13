@@ -1,7 +1,7 @@
 package com.watchtogether.userprofileservice.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.watchtogether.userprofileservice.event.UpdateLoginEvent;
+import com.watchtogether.userprofileservice.event.UpdateUserCredEvent;
 import com.watchtogether.userprofileservice.event.UserRegisterEvent;
 import com.watchtogether.userprofileservice.service.IUserProfileService;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +38,15 @@ public class KafkaConsumer {
             String id = record.key();
             byte[] body = record.value();
 
-            UpdateLoginEvent event = objectMapper.readValue(body, UpdateLoginEvent.class);
-            log.info("Received update user login with id {} successful", event.getUserId());
-            userService.updateUserLoginById(event);
+            UpdateUserCredEvent event = objectMapper.readValue(body, UpdateUserCredEvent.class);
+
+            if(event.getCredType().equals("LOGIN")) {
+                log.info("Received update user login with id {} successful", event.getUserId());
+                userService.updateUserLoginById(event);
+            } else if(event.getCredType().equals("EMAIL")) {
+                log.info("Received update user email with id {} successful", event.getUserId());
+                userService.updateUserEmailById(event);
+            }
 
         } catch (Exception e) {
             log.error("Error deserializing update user profile event for userId: {}", record.key(), e);

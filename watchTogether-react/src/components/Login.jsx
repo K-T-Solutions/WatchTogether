@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useMutation } from '@apollo/client';
 import { LOGIN_MUTATION } from '../graphql/auth';
+import { getGraphQLErrorMessage } from '../utils/apollo';
 import { getUserFromToken } from '../utils/jwt';
+import OtpInput from './OtpInput';
 
 export default function Login({onSwitchToRegister, onClose, onLogin}) {
     const [username, setUsername] = useState("");
@@ -9,6 +11,8 @@ export default function Login({onSwitchToRegister, onClose, onLogin}) {
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [showOtpForm, setShowOtpForm] = useState(false);
+    const [userEmail, setUserEmail] = useState("");
 
     const [loginMutation] = useMutation(LOGIN_MUTATION);
 
@@ -29,62 +33,91 @@ export default function Login({onSwitchToRegister, onClose, onLogin}) {
                 }
             });
 
-            if (data.login.token) {
-                // Сохраняем токен в localStorage
-                localStorage.setItem('authToken', data.login.token);
-                
-                // Получаем данные пользователя из токена
-                const userData = getUserFromToken(data.login.token);
-                
-                if (userData) {
-                    // Добавляем дополнительные данные пользователя
-                    const fullUserData = {
-                        ...userData,
-                        displayName: userData.username, // Используем username как начальное displayName
-                        email: username.includes('@') ? username : `${username}@example.com`,
-                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
-                        friends: [
-                            { 
-                                username: 'Alice', 
-                                displayName: 'Alice Johnson',
-                                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Alice`,
-                                id: Date.now() + 1,
-                                bio: "Movie enthusiast and coffee lover",
-                                followers: 8,
-                                following: 15,
-                                publicEmail: false,
-                                publicFriends: true
-                            },
-                            { 
-                                username: 'Bob', 
-                                displayName: 'Bob Smith',
-                                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Bob`,
-                                id: Date.now() + 2,
-                                bio: "Gaming and streaming fanatic",
-                                followers: 23,
-                                following: 12,
-                                publicEmail: true,
-                                publicFriends: false
-                            }
-                        ],
-                        followers: 12,
-                        following: 7
-                    };
-                    
-                    onLogin(fullUserData);
-                } else {
-                    setError("Invalid token received");
-                }
+            if (data.login.twoFactorRequired) {
+                // Если требуется двухфакторная аутентификация
+                setUserEmail(username.includes('@') ? username : `${username}@example.com`);
+                setShowOtpForm(true);
+            } else if (data.login.token) {
+                // Обычная аутентификация без 2FA
+                handleSuccessfulLogin(data.login.token);
             } else {
-                setError(data.login.message || "Login failed");
+                setError("Login failed");
             }
         } catch (error) {
             console.error('Login error:', error);
-            setError(error.message || "An error occurred during login");
+            setError(getGraphQLErrorMessage(error, 'Login failed'));
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handleSuccessfulLogin = (token) => {
+        // Сохраняем токен в localStorage
+        localStorage.setItem('authToken', token);
+        
+        // Получаем данные пользователя из токена
+        const userData = getUserFromToken(token);
+        
+        if (userData) {
+            // Добавляем дополнительные данные пользователя
+            const fullUserData = {
+                ...userData,
+                displayName: userData.username, // Используем username как начальное displayName
+                email: username.includes('@') ? username : `${username}@example.com`,
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
+                friends: [
+                    { 
+                        username: 'Alice', 
+                        displayName: 'Alice Johnson',
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Alice`,
+                        id: Date.now() + 1,
+                        bio: "Movie enthusiast and coffee lover",
+                        followers: 8,
+                        following: 15,
+                        publicEmail: false,
+                        publicFriends: true
+                    },
+                    { 
+                        username: 'Bob', 
+                        displayName: 'Bob Smith',
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Bob`,
+                        id: Date.now() + 2,
+                        bio: "Gaming and streaming fanatic",
+                        followers: 23,
+                        following: 12,
+                        publicEmail: true,
+                        publicFriends: false
+                    }
+                ],
+                followers: 12,
+                following: 7
+            };
+            
+            onLogin(fullUserData);
+        } else {
+            setError("Invalid token received");
+        }
+    };
+
+    const handleBackToLogin = () => {
+        setShowOtpForm(false);
+        setError("");
+    };
+
+    // Если показываем форму OTP
+    if (showOtpForm) {
+        // Use the same identifier the user entered (username or email)
+        const identifier = username;
+        return (
+            <OtpInput 
+                identifier={identifier}
+                email={userEmail}
+                onBack={handleBackToLogin}
+                onLogin={onLogin}
+                onClose={onClose}
+            />
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit}

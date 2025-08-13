@@ -34,9 +34,6 @@ public class UserProfileEntity {
     @Column(name = "email")
     private String displayEmail;
 
-    @Column(name = "pending_email") //TODO: тут подумать как вообще будет проходить процесс смены почты
-    private String pendingEmail;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PrivacyLevel privacyLevel = PrivacyLevel.PUBLIC;

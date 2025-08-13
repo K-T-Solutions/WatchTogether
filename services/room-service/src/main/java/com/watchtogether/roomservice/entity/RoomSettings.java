@@ -1,29 +1,31 @@
-package com.watchtogether.roomservice.entity;
-
-import com.watchtogether.roomservice.enums.InvitationPermission;
-import com.watchtogether.roomservice.enums.PlaybackControlLevel;
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Embeddable
-public class RoomSettings {
-    @Column(nullable = false)
-    private boolean allowQueueModifications = true;
-
-    @Column(nullable = false)
-    private boolean requireApproval = false; // Для новых участников
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PlaybackControlLevel controlLevel = PlaybackControlLevel.MODERATORS;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private InvitationPermission invitationPermission = InvitationPermission.MODERATORS;
-
-    @Column(nullable = false)
-    private boolean chatEnabled = true;
-}
+//package com.watchtogether.roomservice.entity;
+//
+//import lombok.Getter;
+//import lombok.Setter;
+//
+//import java.io.Serializable;
+//
+//@Getter
+//@Setter
+//public class RoomSettings implements Serializable {
+//
+////    private boolean allowChat = true;
+////    private boolean allowScreenSharing = true;
+////    private boolean allowFileSharing = true;
+////    private boolean allowVoiceChat = true;
+////    private boolean allowVideoChat = true;
+////
+////    // Настройки модерации
+////    private boolean requireApprovalToJoin = false;
+////    private boolean allowAnonymousUsers = true;
+////    private boolean allowUserInvites = true;
+////
+////    // Настройки приватности
+////    private boolean showParticipantList = true;
+////    private boolean showRoomActivity = true;
+////
+////    // Настройки уведомлений
+////    private boolean notifyOnUserJoin = true;
+////    private boolean notifyOnUserLeave = true;
+////    private boolean notifyOnMessage = false;
+//}

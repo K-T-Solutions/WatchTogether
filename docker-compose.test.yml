@@ -67,6 +67,21 @@ services:
       timeout: 10s
       retries: 5
 
+  # Redis (for tests/dev)
+  redis:
+    image: redis:7-alpine
+    container_name: watchtogether-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # API Gateway
   api-gateway:
     build:
@@ -104,8 +119,10 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-#    environment:
-#      SPRING_PROFILES_ACTIVE: docker
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
 #      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/watchtogether
 #      SPRING_DATASOURCE_USERNAME: postgres
 #      SPRING_DATASOURCE_PASSWORD: postgres

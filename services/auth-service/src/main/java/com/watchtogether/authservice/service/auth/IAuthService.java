@@ -10,7 +10,5 @@ public interface IAuthService {
     @Transactional
     void registerUser(RegisterRequest request);
 
-    Optional<String> authenticate(LoginRequest request);
-
     boolean validateToken(String token);
 }

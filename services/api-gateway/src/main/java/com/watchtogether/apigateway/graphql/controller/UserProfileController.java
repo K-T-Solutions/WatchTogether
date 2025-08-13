@@ -1,6 +1,6 @@
 package com.watchtogether.apigateway.graphql.controller;
 
-import com.watchtogether.apigateway.graphql.input.UpdateUserProfileRequest;
+import com.watchtogether.apigateway.graphql.input.UpdateUserProfileInput;
 import com.watchtogether.apigateway.grpc.UserProfileGrpcClient;
 import com.watchtogether.grpc.UserServiceProto;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class UserProfileController {
 
     @MutationMapping
     public UserServiceProto.UserResponseGrpc updateUserProfileById(
-            @Argument UpdateUserProfileRequest request
+            @Argument UpdateUserProfileInput request
     ) {
         return grpcClient.updateUserProfileById(request);
     }

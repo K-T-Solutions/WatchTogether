@@ -14,4 +14,7 @@ public interface ICredentialsService {
     AuthCredentialsEntity updateLogin(UUID userId, String newLogin);
 
     AuthCredentialsEntity updatePassword(UUID userId, String oldPassword, String newPassword);
+
+
+    void verifyEmail(UUID userId);
 }

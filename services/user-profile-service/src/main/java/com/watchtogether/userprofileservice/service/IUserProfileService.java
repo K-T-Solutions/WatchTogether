@@ -2,7 +2,7 @@ package com.watchtogether.userprofileservice.service;
 
 import com.watchtogether.userprofileservice.entity.UserProfileEntity;
 import com.watchtogether.userprofileservice.enums.PrivacyLevel;
-import com.watchtogether.userprofileservice.event.UpdateLoginEvent;
+import com.watchtogether.userprofileservice.event.UpdateUserCredEvent;
 import com.watchtogether.userprofileservice.request.UpdateUserProfileRequest;
 import com.watchtogether.userprofileservice.event.UserRegisterEvent;
 
@@ -15,7 +15,9 @@ public interface IUserProfileService {
 
     UserProfileEntity updateUserProfileById(UpdateUserProfileRequest request, UUID userId);
 
-    UserProfileEntity updateUserLoginById(UpdateLoginEvent event);
+    UserProfileEntity updateUserLoginById(UpdateUserCredEvent event);
+
+    UserProfileEntity updateUserEmailById(UpdateUserCredEvent event);
 
     UserProfileEntity updateUserPrivacyLevel(PrivacyLevel privacyLevel, UUID userId);
 }

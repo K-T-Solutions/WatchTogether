@@ -25,23 +25,31 @@ public class AuthGrpcClient {
         return blockingStub.registerUser(request);
     }
 
-    public AuthServiceProto.AuthenticateResponse authenticate(String identifier, String password) {
+    public AuthServiceProto.AuthenticateResponse login(String identifier, String password) {
         AuthServiceProto.LoginRequest request = AuthServiceProto.LoginRequest.newBuilder()
                 .setIdentifier(identifier)
                 .setPassword(password)
                 .build();
-        return blockingStub.authenticate(request);
+        return blockingStub.login(request);
+    }
+
+    public AuthServiceProto.AuthenticateResponse validateOtp(String login, String code) {
+        AuthServiceProto.VerificationRequest request = AuthServiceProto.VerificationRequest.newBuilder()
+                .setLogin(login)
+                .setCode(code)
+                .build();
+        return blockingStub.validateOtp(request);
     }
 
     public AuthServiceProto.ValidateTokenResponse validateToken(String token) {
         AuthServiceProto.ValidateTokenRequest request = AuthServiceProto.ValidateTokenRequest.newBuilder()
                 .setToken(token)
                 .build();
-        return blockingStub.validateToken(request);
+        return blockingStub.validateJwtToken(request);
     }
 
-    public AuthServiceProto.UpdateCredResponseGrpc updateUserLogin(String userId, String login) {
-        AuthServiceProto.UpdateLoginRequestGrpc requestGrpc = AuthServiceProto.UpdateLoginRequestGrpc
+    public AuthServiceProto.UpdateCredResponse updateUserLogin(String userId, String login) {
+        AuthServiceProto.UpdateLoginRequest requestGrpc = AuthServiceProto.UpdateLoginRequest
                 .newBuilder()
                 .setUserId(userId)
                 .setLogin(login)
@@ -49,14 +57,57 @@ public class AuthGrpcClient {
         return blockingStub.updateLogin(requestGrpc);
     }
 
-    public AuthServiceProto.UpdateCredResponseGrpc updateUserPassword(String userId, String oldPass, String newPass) {
-        AuthServiceProto.UpdatePasswordRequestGrpc request = AuthServiceProto.UpdatePasswordRequestGrpc
+    public AuthServiceProto.UpdateCredResponse updateUserEmail(String userId, String email) {
+        AuthServiceProto.UpdateEmailRequest requestGrpc = AuthServiceProto.UpdateEmailRequest
                 .newBuilder()
                 .setUserId(userId)
-                .setOldPass(oldPass)
-                .setNewPass(newPass)
+                .setEmail(email)
+                .build();
+        return blockingStub.updateEmail(requestGrpc);
+    }
+
+    public AuthServiceProto.UpdateCredResponse updateUserPassword(String userId, String oldPass, String newPass) {
+        AuthServiceProto.UpdatePasswordRequest request = AuthServiceProto.UpdatePasswordRequest
+                .newBuilder()
+                .setUserId(userId)
+                .setOldPassword(oldPass)
+                .setNewPassword(newPass)
                 .build();
         return blockingStub.updatePassword(request);
+    }
+
+    public AuthServiceProto.VerifyEmailResponse initiateEmailVerification(String userId) {
+        AuthServiceProto.UserIdRequest request = AuthServiceProto.UserIdRequest
+                .newBuilder()
+                .setUserId(userId)
+                .build();
+        return blockingStub.initiateEmailVerification(request);
+    }
+
+    public AuthServiceProto.VerifyEmailResponse finishEmailVerification(String userId, String code) {
+        AuthServiceProto.VerifyEmailRequest request = AuthServiceProto.VerifyEmailRequest
+                .newBuilder()
+                .setUserId(userId)
+                .setCode(code)
+                .build();
+        return blockingStub.finishEmailVerification(request);
+    }
+
+    public AuthServiceProto.UserCredResponse getUserCred(String userId) {
+        return blockingStub.
+                getUserCredentials(AuthServiceProto.UserIdRequest
+                        .newBuilder()
+                        .setUserId(userId)
+                        .build());
+    }
+
+    public AuthServiceProto.EnableTwoFactorResponse enableTwoFactor(String userId) {
+        return blockingStub.enableTwoFactor(
+                AuthServiceProto.UserIdRequest
+                        .newBuilder()
+                        .setUserId(userId)
+                        .build()
+        );
     }
 
 }

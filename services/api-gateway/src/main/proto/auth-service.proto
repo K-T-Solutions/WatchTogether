@@ -1,18 +1,22 @@
 syntax = "proto3";
 
+package watchtogether.auth.v1;
 
 option java_package = "com.watchtogether.grpc";
 option java_outer_classname = "AuthServiceProto";
 
 service AuthService {
   rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
-  rpc Authenticate (LoginRequest) returns (AuthenticateResponse);
-  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
-
-  rpc UpdateLogin (UpdateLoginRequestGrpc) returns (UpdateCredResponseGrpc);
-
-  rpc UpdatePassword (UpdatePasswordRequestGrpc) returns (UpdateCredResponseGrpc);
-
+  rpc Login (LoginRequest) returns (AuthenticateResponse);
+  rpc ValidateOtp (VerificationRequest) returns (AuthenticateResponse);
+  rpc ValidateJwtToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc UpdateLogin (UpdateLoginRequest) returns (UpdateCredResponse);
+  rpc UpdateEmail (UpdateEmailRequest) returns (UpdateCredResponse);
+  rpc UpdatePassword (UpdatePasswordRequest) returns (UpdateCredResponse);
+  rpc InitiateEmailVerification (UserIdRequest) returns (VerifyEmailResponse);
+  rpc FinishEmailVerification (VerifyEmailRequest) returns (VerifyEmailResponse);
+  rpc GetUserCredentials (UserIdRequest) returns (UserCredResponse);
+  rpc EnableTwoFactor (UserIdRequest) returns (EnableTwoFactorResponse);
 }
 
 message RegisterRequest {
@@ -27,12 +31,21 @@ message RegisterResponse {
 }
 
 message LoginRequest {
-  string identifier = 1; // Может быть логином или email
+  // Identifier can be login or email
+  string identifier = 1;
   string password = 2;
 }
 
+message VerificationRequest {
+  string login = 1;
+  string code = 2;
+}
+
 message AuthenticateResponse {
-  string token = 1; // Пустая строка означает неудачу
+  oneof response_type {
+    string token = 1;
+    bool two_factor_required = 2;
+  }
 }
 
 message ValidateTokenRequest {
@@ -43,18 +56,48 @@ message ValidateTokenResponse {
   bool is_valid = 1;
 }
 
-message UpdateLoginRequestGrpc {
-  string userId = 1;
+message UpdateLoginRequest {
+  string user_id = 1;
   string login = 2;
 }
 
-message UpdatePasswordRequestGrpc {
-  string userId = 1;
-  string oldPass = 2;
-  string newPass = 3;
+message UpdateEmailRequest {
+  string user_id = 1;
+  string email = 2;
 }
 
-message UpdateCredResponseGrpc {
+message UpdatePasswordRequest {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message UpdateCredResponse {
   string message = 1;
 }
 
+message UserIdRequest {
+  string user_id = 1;
+}
+
+message VerifyEmailRequest {
+  string user_id = 1;
+  string code = 2;
+}
+
+message VerifyEmailResponse {
+  bool result = 1;
+}
+
+message UserCredResponse {
+  string login = 1;
+  string email = 2;
+  bool email_verified = 3;
+  bool enabled = 4;
+  string created_at = 5;
+}
+
+message EnableTwoFactorResponse {
+  bool result = 1;
+  string message = 2;
+}

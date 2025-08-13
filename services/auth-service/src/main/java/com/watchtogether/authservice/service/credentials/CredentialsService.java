@@ -36,15 +36,16 @@ public class CredentialsService implements ICredentialsService {
             throw new EmailAlreadyTakenException("This email already exists");
         }
 
-        return Optional.ofNullable(getByUserId(userId))
+        return Optional.ofNullable(getByUserId(userId)) //TODO: создавать 2fa сущность
                 .map(u -> {
                     u.setEmail(newEmail);
-//                    kafkaProducer.sendUpdateUserCredEvent(
-//                            UpdateUserCredEvent.builder()
-//                                    .userId(userId)
-//                                    .newLogin(u.getEmail())
-////                                    .credType("EMAIL")
-//                                    .build());
+                    u.setEmailVerified(false); //TODO: проверит что будет с 2FA
+                    kafkaProducer.sendUpdateUserCredEvent(
+                            UpdateUserCredEvent.builder()
+                                    .userId(userId)
+                                    .newLogin(u.getEmail())
+                                    .credType("EMAIL")
+                                    .build());
                     return repository.save(u);
                 }).orElseThrow(() ->
                         new UserNotFoundException("User with id " + userId + " not found"));
@@ -63,7 +64,7 @@ public class CredentialsService implements ICredentialsService {
                             UpdateUserCredEvent.builder()
                                     .userId(userId)
                                     .newLogin(u.getLogin())
-//                                    .credType("LOGIN")
+                                    .credType("LOGIN")
                                     .build());
                     return repository.save(u);
                 }).orElseThrow(() ->
@@ -81,6 +82,15 @@ public class CredentialsService implements ICredentialsService {
                     return repository.save(u);
                 }).orElseThrow(() ->
                         new InvalidCredentialsException("Invalid password"));
+    }
+
+    @Override
+    public void verifyEmail(UUID userId) {
+        Optional.ofNullable(getByUserId(userId))
+                .map(u -> {
+                    u.setEmailVerified(true);
+                    return repository.save(u);
+                }); //TODO: проверить нужно ли бросать исключение
     }
 
 }

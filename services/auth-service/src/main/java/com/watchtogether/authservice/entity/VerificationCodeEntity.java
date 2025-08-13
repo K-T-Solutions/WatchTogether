@@ -13,6 +13,7 @@ import java.util.UUID;
 public class VerificationCodeEntity { //TODO: мб в редисе сделать
 
     public enum CodeType {
+        TWO_FACTOR_AUTH,
         EMAIL_VERIFICATION,
         PASSWORD_RESET,
         EMAIL_CHANGE

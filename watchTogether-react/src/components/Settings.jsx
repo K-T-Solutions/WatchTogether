@@ -6,6 +6,8 @@ import { UPDATE_USER_PROFILE, UPDATE_USER_LOGIN, UPDATE_USER_PASSWORD } from "..
 import { getUserFromToken } from "../utils/jwt";
 import Header from "./Header";
 import Notification from "./Notification";
+import EmailVerifyModal from "./EmailVerifyModal";
+import { GET_USER_CRED_QUERY, ENABLE_TWO_FACTOR_MUTATION, SEND_EMAIL_VERIFICATION_CODE, VERIFY_EMAIL_CODE } from "../graphql/auth";
 
 export default function Settings({ currentUser, onLogout }) {
   const [activeSection, setActiveSection] = useState('public-profile');
@@ -24,6 +26,13 @@ export default function Settings({ currentUser, onLogout }) {
     skip: !userId,
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all'
+  });
+
+  // Загружаем креды пользователя (emailVerified)
+  const { data: credData, refetch: refetchCreds } = useQuery(GET_USER_CRED_QUERY, {
+    variables: { userId },
+    skip: !userId,
+    fetchPolicy: 'cache-first'
   });
 
   // Мутация для обновления профиля
@@ -192,6 +201,94 @@ export default function Settings({ currentUser, onLogout }) {
   // Состояние для отображения форм
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const isEmailVerified = !!credData?.getUserCredentials?.emailVerified;
+  const [enableTwoFactor, { loading: enable2faLoading }] = useMutation(ENABLE_TWO_FACTOR_MUTATION, {
+    onCompleted: (res) => {
+      setNotification({ isVisible: true, message: res?.enableTwoFactor?.message || '2FA enabled', type: 'success' });
+      refetchCreds();
+    },
+    onError: (e) => {
+      setNotification({ isVisible: true, message: `Error enabling 2FA: ${e.message}`, type: 'error' });
+    }
+  });
+
+  // Email verification
+  const [emailCode, setEmailCode] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const [isSending, setIsSending] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [resendTick, setResendTick] = useState(0); // to reset modal timer after resend
+  // Local-only notification preferences (frontend only for now)
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    friendRequests: true,
+    roomInvites: true,
+    messages: true,
+    mentions: true
+  });
+
+  const startCooldown = (seconds = 30) => {
+    setCooldown(seconds);
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendEmailCode = async () => {
+    if (!userId || cooldown > 0) return false;
+    try {
+      setIsSending(true);
+      await refetch({ userId });
+      // eslint-disable-next-line no-undef
+      await window.__APOLLO_CLIENT__.query({
+        query: SEND_EMAIL_VERIFICATION_CODE,
+        variables: { userId }
+      });
+      setNotification({ isVisible: true, message: 'Verification code sent to your email', type: 'success' });
+      startCooldown(30);
+      setResendTick((v) => v + 1);
+      return true;
+    } catch (e) {
+      setNotification({ isVisible: true, message: `Failed to send code: ${e.message}` , type: 'error' });
+      return false;
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async (codeFromModal) => {
+    const codeToUse = (codeFromModal ?? emailCode).trim();
+    if (!codeToUse) {
+      setNotification({ isVisible: true, message: 'Enter verification code', type: 'error' });
+      return false;
+    }
+    try {
+      // eslint-disable-next-line no-undef
+      const res = await window.__APOLLO_CLIENT__.query({
+        query: VERIFY_EMAIL_CODE,
+        variables: { userId, code: codeToUse },
+        fetchPolicy: 'no-cache'
+      });
+      const ok = !!res?.data?.finishEmailVerification;
+      if (ok) {
+        setNotification({ isVisible: true, message: 'Email verified successfully', type: 'success' });
+        setEmailCode("");
+        await refetchCreds();
+        setShowEmailModal(false);
+        return true;
+      }
+      setNotification({ isVisible: true, message: 'Invalid code', type: 'error' });
+      return false;
+    } catch (e) {
+      setNotification({ isVisible: true, message: `Failed to verify: ${e.message}`, type: 'error' });
+      return false;
+    }
+  };
 
   // Состояние для отслеживания исходных данных
   const [originalPublicProfileData, setOriginalPublicProfileData] = useState({
@@ -548,7 +645,7 @@ export default function Settings({ currentUser, onLogout }) {
           <div className="text-gray-400 mb-6">Failed to load settings data. Please try again.</div>
           <button 
             onClick={() => refetch()}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors"
+            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors cursor-pointer"
           >
             Try Again
           </button>
@@ -573,7 +670,7 @@ export default function Settings({ currentUser, onLogout }) {
               alt="Avatar" 
               className="w-24 h-24 rounded-full border-4 border-indigo-500"
             />
-            <button className="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-full transition-colors shadow-lg">
+            <button className="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-full transition-colors shadow-lg cursor-pointer">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
@@ -643,7 +740,7 @@ export default function Settings({ currentUser, onLogout }) {
           <button
             onClick={handleSavePublicProfile}
             disabled={updateLoading || !hasUnsavedChanges}
-            className={`bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg transition ${
+            className={`bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg transition cursor-pointer ${
               updateLoading || !hasUnsavedChanges ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
             }`}
           >
@@ -659,7 +756,7 @@ export default function Settings({ currentUser, onLogout }) {
           <button
             onClick={handleCancelPublicProfile}
             disabled={updateLoading}
-            className={`px-6 py-3 bg-[#232346] text-white font-medium rounded-lg transition ${
+            className={`px-6 py-3 bg-[#232346] text-white font-medium rounded-lg transition cursor-pointer ${
               updateLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#2a2a4a]'
             }`}
           >
@@ -673,186 +770,210 @@ export default function Settings({ currentUser, onLogout }) {
   const renderAccountSection = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-white text-2xl font-bold mb-2">Account Settings</h2>
+        <h2 className="text-white text-2xl font-bold mb-2">Account settings</h2>
         <p className="text-gray-400">Manage your account credentials and preferences</p>
       </div>
 
-      {/* Current Account Info */}
-      <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
-        {/* Current Username */}
-        <div>
-          <label className="block text-gray-400 text-sm font-medium mb-2">
-            Current Username
-          </label>
-          <p className="text-white text-lg font-medium">{profileData?.login || currentUser?.username || 'Not set'}</p>
-        </div>
-
-        {/* Current Email */}
-        <div>
-          <label className="block text-gray-400 text-sm font-medium mb-2">
-            Current Email
-          </label>
-          <p className="text-white text-lg font-medium">{profileData?.displayEmail || currentUser?.email || 'Not set'}</p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-4 pt-4">
-          <button
-            onClick={handleShowLoginForm}
-            disabled={updateLoginLoading || updatePasswordLoading}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Update Login
-          </button>
-          <button
-            onClick={handleShowPasswordForm}
-            disabled={updateLoginLoading || updatePasswordLoading}
-            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Update Password
-          </button>
-        </div>
-      </div>
-
-      {/* Login Update Form */}
-      {showLoginForm && (
-        <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-white text-lg font-semibold">Update Username</h3>
-            <button
-              onClick={() => setShowLoginForm(false)}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          
+      {/* Change Username (GitHub-like) */}
+      <div className="bg-[#181828] rounded-2xl border border-[#232346] p-6">
+        <div className="flex items-start justify-between gap-6">
           <div>
-            <label className="block text-gray-400 text-sm font-medium mb-2">
-              New Username
-            </label>
+            <h3 className="text-white text-lg font-semibold">Change username</h3>
+            <div className="mt-3 text-sm text-gray-400">
+              Current: <span className="text-white font-medium">{profileData?.login || currentUser?.username || 'not set'}</span>
+            </div>
+          </div>
+          {!showLoginForm && (
+            <button
+              onClick={handleShowLoginForm}
+              disabled={updateLoginLoading}
+              className="shrink-0 h-10 px-4 rounded-md bg-[#232346] text-white hover:bg-[#2a2a4a] border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Change username
+            </button>
+          )}
+        </div>
+
+        {showLoginForm && (
+          <div className="mt-6 border-t border-[#232346] pt-6">
+            <label className="block text-gray-400 text-sm font-medium mb-2">New username</label>
             <input
               type="text"
               name="username"
               value={accountData.username}
               onChange={handleAccountChange}
-              className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter new username..."
+              className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Enter new username"
             />
-            <p className="text-gray-500 text-xs mt-1">Minimum 3 characters</p>
+            <div className="flex items-center gap-3 mt-4">
+              <button
+                onClick={handleSaveAccount}
+                disabled={updateLoginLoading}
+                className="h-10 px-5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updateLoginLoading ? 'Updating…' : 'Update username'}
+              </button>
+              <button
+                onClick={() => setShowLoginForm(false)}
+                disabled={updateLoginLoading}
+                className="h-10 px-5 rounded-md bg-[#232346] hover:bg-[#2a2a4a] text-white border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
+        )}
+      </div>
 
-          <div className="flex gap-4">
-            <button
-              onClick={handleSaveAccount}
-              disabled={updateLoginLoading}
-              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {updateLoginLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Updating...</span>
-                </div>
-              ) : (
-                'Update Username'
-              )}
-            </button>
-            <button
-              onClick={() => setShowLoginForm(false)}
-              disabled={updateLoginLoading}
-              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
+      {/* Change Password (GitHub-like) */}
+      <div className="bg-[#181828] rounded-2xl border border-[#232346] p-6">
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <h3 className="text-white text-lg font-semibold">Change password</h3>
+            <p className="text-gray-400 text-sm mt-1">A strong password helps keep your account secure.</p>
           </div>
+          {!showPasswordForm && (
+            <button
+              onClick={handleShowPasswordForm}
+              disabled={updatePasswordLoading}
+              className="shrink-0 h-10 px-4 rounded-md bg-[#232346] text-white hover:bg-[#2a2a4a] border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Change password
+            </button>
+          )}
         </div>
-      )}
 
-      {/* Password Update Form */}
-      {showPasswordForm && (
-        <div className="bg-[#181828] rounded-xl p-6 border border-[#232346] space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-white text-lg font-semibold">Update Password</h3>
-            <button
-              onClick={() => setShowPasswordForm(false)}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          
-          <div className="space-y-4">
+        {showPasswordForm && (
+          <div className="mt-6 border-t border-[#232346] pt-6 space-y-4">
             <div>
-              <label className="block text-gray-400 text-sm font-medium mb-2">
-                Current Password
-              </label>
+              <label className="block text-gray-400 text-sm font-medium mb-2">Current password</label>
               <input
                 type="password"
                 name="currentPassword"
                 value={accountData.currentPassword}
                 onChange={handleAccountChange}
-                className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter current password..."
+                className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Enter current password"
               />
             </div>
             <div>
-              <label className="block text-gray-400 text-sm font-medium mb-2">
-                New Password
-              </label>
+              <label className="block text-gray-400 text-sm font-medium mb-2">New password</label>
               <input
                 type="password"
                 name="newPassword"
                 value={accountData.newPassword}
                 onChange={handleAccountChange}
-                className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter new password..."
+                className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Enter new password"
               />
               <p className="text-gray-500 text-xs mt-1">Minimum 6 characters</p>
             </div>
             <div>
-              <label className="block text-gray-400 text-sm font-medium mb-2">
-                Confirm New Password
-              </label>
+              <label className="block text-gray-400 text-sm font-medium mb-2">Confirm new password</label>
               <input
                 type="password"
                 name="confirmPassword"
                 value={accountData.confirmPassword}
                 onChange={handleAccountChange}
-                className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Confirm new password..."
+                className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Confirm new password"
               />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveAccount}
+                disabled={updatePasswordLoading}
+                className="h-10 px-5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updatePasswordLoading ? 'Updating…' : 'Update password'}
+              </button>
+              <button
+                onClick={() => setShowPasswordForm(false)}
+                disabled={updatePasswordLoading}
+                className="h-10 px-5 rounded-md bg-[#232346] hover:bg-[#2a2a4a] text-white border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Security / Email Verify + 2FA Card */}
+      <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346] space-y-6">
+        {/* Email verification row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h3 className="text-white text-lg font-semibold">Email verification</h3>
+            <p className="text-gray-400 text-sm mt-1">Verify your email to enable advanced security features</p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium border"
+                 style={{
+                   background: isEmailVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.08)',
+                   color: isEmailVerified ? '#10B981' : '#EF4444',
+                   borderColor: isEmailVerified ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'
+                 }}>
+              <span className={`w-2 h-2 rounded-full ${isEmailVerified ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+              <span>{isEmailVerified ? 'Email verified' : 'Email not verified'}</span>
             </div>
           </div>
 
-          <div className="flex gap-4">
+          {!isEmailVerified && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => { const sent = await handleSendEmailCode(); if (sent) setShowEmailModal(true); }}
+                disabled={cooldown > 0 || isSending}
+                className={`h-10 px-5 rounded-md font-semibold transition ${
+                  cooldown > 0 || isSending
+                    ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
+                    : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                }`}
+              >
+                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Verify email'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="h-px bg-[#232346]" />
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-white text-lg font-semibold">Two‑Factor Authentication (2FA)</h3>
+            <p className="text-gray-400 text-sm mt-1">Add an extra layer of security to your account</p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium border"
+                 style={{
+                   background: isEmailVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.08)',
+                   color: isEmailVerified ? '#10B981' : '#EF4444',
+                   borderColor: isEmailVerified ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'
+                 }}>
+              <span className={`w-2 h-2 rounded-full ${isEmailVerified ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+              <span>{isEmailVerified ? 'Email verified' : 'Email not verified'}</span>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
             <button
-              onClick={handleSaveAccount}
-              disabled={updatePasswordLoading}
-              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => enableTwoFactor({ variables: { userId } })}
+              disabled={!isEmailVerified || enable2faLoading}
+              className={`inline-flex items-center gap-2 font-semibold py-3 px-5 rounded-lg transition cursor-pointer ${
+                !isEmailVerified || enable2faLoading
+                  ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-tr from-indigo-500 to-pink-500 text-white hover:opacity-90'
+              }`}
             >
-              {updatePasswordLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Updating...</span>
-                </div>
+              {enable2faLoading ? (
+                <span className="flex items-center gap-2"><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span> Enabling…</span>
               ) : (
-                'Update Password'
+                'Enable 2FA'
               )}
             </button>
-            <button
-              onClick={() => setShowPasswordForm(false)}
-              disabled={updatePasswordLoading}
-              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
+            {!isEmailVerified && (
+              <div className="text-xs text-gray-400">Verify your email to enable 2FA</div>
+            )}
           </div>
         </div>
-      )}
+      </div>
+
+      {/* The old separate forms were merged into the cards above */}
     </div>
   );
 
@@ -871,11 +992,112 @@ export default function Settings({ currentUser, onLogout }) {
   const renderNotificationsSection = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-white text-2xl font-bold mb-2">Notification Settings</h2>
-        <p className="text-gray-400">Manage your notification preferences</p>
+        <h2 className="text-white text-2xl font-bold mb-2">Notification preferences</h2>
+        <p className="text-gray-400">Choose what to be notified about</p>
       </div>
-      <div className="bg-[#181828] rounded-xl p-6 border border-[#232346]">
-        <p className="text-gray-400">Notification settings will be implemented soon...</p>
+
+      <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346]">
+        <div className="divide-y divide-[#232346]">
+          {/* Friend requests */}
+          <div className="py-4 flex items-center justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">🤝</div>
+              <div>
+                <div className="text-white font-medium">Friend requests</div>
+                <div className="text-gray-400 text-sm">Get notified when someone sends you a friend request</div>
+              </div>
+            </div>
+            <button
+              role="switch"
+              aria-checked={notificationPrefs.friendRequests}
+              onClick={() => setNotificationPrefs((p) => ({ ...p, friendRequests: !p.friendRequests }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                notificationPrefs.friendRequests ? 'bg-indigo-600' : 'bg-[#232346]'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.friendRequests ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Room invites */}
+          <div className="py-4 flex items-center justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">🎥</div>
+              <div>
+                <div className="text-white font-medium">Room invites</div>
+                <div className="text-gray-400 text-sm">Be alerted when you are invited to a room</div>
+              </div>
+            </div>
+            <button
+              role="switch"
+              aria-checked={notificationPrefs.roomInvites}
+              onClick={() => setNotificationPrefs((p) => ({ ...p, roomInvites: !p.roomInvites }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                notificationPrefs.roomInvites ? 'bg-indigo-600' : 'bg-[#232346]'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.roomInvites ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div className="py-4 flex items-center justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">💬</div>
+              <div>
+                <div className="text-white font-medium">Messages</div>
+                <div className="text-gray-400 text-sm">Receive notifications for new direct messages</div>
+              </div>
+            </div>
+            <button
+              role="switch"
+              aria-checked={notificationPrefs.messages}
+              onClick={() => setNotificationPrefs((p) => ({ ...p, messages: !p.messages }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                notificationPrefs.messages ? 'bg-indigo-600' : 'bg-[#232346]'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.messages ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Mentions */}
+          <div className="py-4 flex items-center justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">📣</div>
+              <div>
+                <div className="text-white font-medium">Mentions</div>
+                <div className="text-gray-400 text-sm">Notify me when someone mentions me</div>
+              </div>
+            </div>
+            <button
+              role="switch"
+              aria-checked={notificationPrefs.mentions}
+              onClick={() => setNotificationPrefs((p) => ({ ...p, mentions: !p.mentions }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                notificationPrefs.mentions ? 'bg-indigo-600' : 'bg-[#232346]'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.mentions ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -902,16 +1124,17 @@ export default function Settings({ currentUser, onLogout }) {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="mb-4">
               <button
                 onClick={() => navigate('/profile')}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="group inline-flex items-center gap-4 text-left text-white focus:outline-none"
+                aria-label="Back to profile"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
+                <span className="text-white text-3xl font-bold">Settings</span>
               </button>
-              <h1 className="text-white text-3xl font-bold">Settings</h1>
             </div>
             {/*<p className="text-gray-400">Manage your account settings and preferences</p>*/}
           </div>
@@ -924,7 +1147,7 @@ export default function Settings({ currentUser, onLogout }) {
                   <button
                     key={item.id}
                     onClick={() => setActiveSection(item.id)}
-                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors ${
+                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors cursor-pointer ${
                       activeSection === item.id
                         ? 'bg-indigo-500 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-[#232346]'
@@ -947,6 +1170,17 @@ export default function Settings({ currentUser, onLogout }) {
           </div>
         </div>
       </div>
+      {showEmailModal && !isEmailVerified && (
+        <EmailVerifyModal
+          email={profileData?.displayEmail || currentUser?.email}
+          onClose={() => setShowEmailModal(false)}
+          onVerify={handleVerifyEmailCode}
+          onResend={handleSendEmailCode}
+          resendCooldown={cooldown}
+          isResending={isSending}
+          resetSignal={resendTick}
+        />
+      )}
     </div>
   );
 } 
