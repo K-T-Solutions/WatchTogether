@@ -71,6 +71,13 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
 
     const input = {
       ownerId: String(currentUser.id),
+      ownerDisplayName: String(
+        currentUser.displayName ||
+        currentUser.username ||
+        currentUser.login ||
+        currentUser.email ||
+        'User'
+      ),
       roomName: form.name.trim(),
       roomDescription: form.description.trim() || "",
       roomType: form.type,

@@ -5,6 +5,48 @@ import { GET_ALL_PUBLIC_ROOMS } from '../graphql/queries';
 import Header from './Header';
 import FlyingShips from './FlyingShips';
 
+const getTimeAgo = (timestamp) => {
+  if (!timestamp) return 'Unknown';
+
+  let seconds;
+  if (typeof timestamp === 'string') {
+    const secondsMatch = timestamp.match(/seconds:\s*(\d+)/);
+    if (secondsMatch) {
+      seconds = parseInt(secondsMatch[1]);
+    }
+  } else if (timestamp && timestamp.seconds !== undefined) {
+    seconds = parseInt(timestamp.seconds);
+  } else if (typeof timestamp === 'number') {
+    seconds = timestamp;
+  }
+
+  if (!seconds || isNaN(seconds)) return 'Invalid timestamp';
+
+  const date = new Date(seconds * 1000);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays}d ago`;
+};
+
+const getInitials = (name) => {
+  if (!name) return 'U';
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(part => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+};
+
 export default function Rooms({ onLogin, onRegister, onProfile, isAuthenticated, currentUser, onLogout, onRoomCreate }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,16 +90,20 @@ export default function Rooms({ onLogin, onRegister, onProfile, isAuthenticated,
     }
   ];
 
+  console.log('Available mock rooms:', mockRooms);
+
   // Используем моковые данные, если GraphQL не вернул данные
   const rooms = data?.getAllPublicRooms?.length > 0 ? data.getAllPublicRooms : mockRooms;
 
   const handleJoinRoom = (room) => {
     console.log('Joining room:', room);
+    console.log('Room ID:', room.roomId);
     console.log('Navigating to:', `/room/${room.roomId}`);
     navigate(`/room/${room.roomId}`);
   };
 
   const handleJoinRoomClick = (e, room) => {
+    console.log('handleJoinRoomClick called with room:', room);
     e.preventDefault();
     e.stopPropagation();
     handleJoinRoom(room);
@@ -90,43 +136,7 @@ export default function Rooms({ onLogin, onRegister, onProfile, isAuthenticated,
     return matchesCategory && matchesSearch;
   });
 
-  const getTimeAgo = (timestamp) => {
-    if (!timestamp) return 'Unknown';
-    
-    // Данные приходят в формате строки с полями seconds и nanos
-    // Нужно извлечь seconds из строки
-    let seconds;
-    
-    if (typeof timestamp === 'string') {
-      // Ищем seconds в строке
-      const secondsMatch = timestamp.match(/seconds:\s*(\d+)/);
-      if (secondsMatch) {
-        seconds = parseInt(secondsMatch[1]);
-      }
-    } else if (timestamp.seconds !== undefined) {
-      // Если это объект с полем seconds
-      seconds = parseInt(timestamp.seconds);
-    } else if (typeof timestamp === 'number') {
-      // Если это число
-      seconds = timestamp;
-    }
-    
-    if (!seconds || isNaN(seconds)) return 'Invalid timestamp';
-    
-    // Google Protocol Buffers Timestamp: seconds с начала эпохи Unix (1970-01-01)
-    const date = new Date(seconds * 1000);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
-  };
+  
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -311,14 +321,14 @@ export default function Rooms({ onLogin, onRegister, onProfile, isAuthenticated,
                       {room.roomDescription}
                     </p>
 
-                    {/* Room Info */}
+                    {/* Host Info (replaces Room ID) */}
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">👤</span>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white flex items-center justify-center text-xs font-bold">
+                        {getInitials(room.roomCreator?.displayName)}
                       </div>
-                      <div>
-                        <p className="text-white text-sm font-medium">Room ID: {room.roomId}</p>
-                        <p className="text-gray-400 text-xs">{getTimeAgo(room.createdAt)}</p>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-white text-sm font-medium">{room.roomCreator?.displayName || 'Unknown'}</span>
+                        <span className="text-gray-400 text-xs">{getTimeAgo(room.createdAt)}</span>
                       </div>
                     </div>
 

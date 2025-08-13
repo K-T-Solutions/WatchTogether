@@ -41,3 +41,32 @@ export const CREATE_ROOM = gql`
     }
   }
 `; 
+
+// Мутация для входа в комнату (добавление участника) и получения актуальных данных комнаты
+export const JOIN_TO_ROOM = gql`
+  mutation JoinToRoom($request: AddParticipantRequest!) {
+    joinToRoom(request: $request) {
+      success
+      message
+      roomId
+      roomName
+      roomDescription
+      roomType
+      roomCategory
+      maxParticipants
+      participantsNumber
+      createdAt
+      roomParticipants {
+        userId
+        displayName
+      }
+    }
+  }
+`;
+
+// Мутация выхода из комнаты (удаление участника)
+export const REMOVE_PARTICIPANT_FROM_ROOM = gql`
+  mutation RemoveParticipantFromRoom($roomId: ID!, $participantId: ID!) {
+    removeParticipantFromRoom(roomId: $roomId, participantId: $participantId)
+  }
+`;
