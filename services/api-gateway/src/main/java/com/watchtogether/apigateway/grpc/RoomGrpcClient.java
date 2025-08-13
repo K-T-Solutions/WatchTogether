@@ -1,6 +1,7 @@
 package com.watchtogether.apigateway.grpc;
 
 import com.watchtogether.apigateway.enums.GraphQLRoomCategory;
+import com.watchtogether.apigateway.graphql.input.AddParticipantUnput;
 import com.watchtogether.apigateway.graphql.input.CreateRoomInput;
 import com.watchtogether.apigateway.util.RoomMapper;
 import com.watchtogether.grpc.*;
@@ -45,7 +46,10 @@ public class RoomGrpcClient {
     public CreateRoomResponse createRoom(CreateRoomInput dto) {
         return blockingStub.createRoom(com.watchtogether.grpc.CreateRoomRequest
                     .newBuilder()
-                        .setOwnerId(dto.getOwnerId())
+                        .setRoomCreator(RoomParticipant.newBuilder()
+                                .setUserId(dto.getOwnerId())
+                                .setDisplayName(dto.getOwnerDisplayName())
+                                .build())
                         .setRoomName(dto.getRoomName())
                         .setRoomDescription(dto.getRoomDescription())
                         .setRoomType(roomMapper.mapTypeToGrpc(dto.getRoomType()))
@@ -55,12 +59,15 @@ public class RoomGrpcClient {
                         .build());
     }
 
-    public AddParticipantResponse addParticipant(String roomId, String participantId, String password) { //TODO: add password
+    public JoinToRoomResponse addParticipant(AddParticipantUnput request) { //TODO: add password
         return blockingStub.addParticipantToRoom(AddParticipantRequest
                 .newBuilder()
-                        .setRoomId(roomId)
-                        .setParticipantId(participantId)
-                        .setPassword(password)
+                        .setRoomId(request.getRoomId().toString())
+                        .setParticipant(RoomParticipant.newBuilder()
+                                .setUserId(request.getParticipantId().toString())
+                                .setDisplayName(request.getParticipantDisplayName())
+                                .build())
+                        .setPassword(request.getPassword())
                         .build());
     }
 
@@ -76,10 +83,13 @@ public class RoomGrpcClient {
         return blockingStub.generateInvitation(request);
     }
 
-    public JoinRoomByInviteResponse joinRoomByInvite(String inviteCode, String userId) {
+    public JoinToRoomResponse joinRoomByInvite(String inviteCode, String userId, String userName) {
         return blockingStub.joinRoomByInvite(JoinRoomByInviteRequest.newBuilder()
                         .setInviteCode(inviteCode)
-                        .setUserId(userId)
+                        .setParticipant(RoomParticipant.newBuilder()
+                                .setUserId(userId)
+                                .setDisplayName(userName)
+                                .build())
                         .build());
     }
 
