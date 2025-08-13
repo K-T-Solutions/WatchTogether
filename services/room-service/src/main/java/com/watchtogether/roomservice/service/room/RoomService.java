@@ -1,8 +1,7 @@
 package com.watchtogether.roomservice.service.room;
 
-import com.watchtogether.grpc.CreateRoomRequest;
-import com.watchtogether.grpc.RoomCategory;
-import com.watchtogether.grpc.RoomType;
+import com.google.protobuf.Timestamp;
+import com.watchtogether.grpc.*;
 import com.watchtogether.roomservice.entity.ActiveRoomEntity;
 import com.watchtogether.roomservice.exception.RoomNotFoundException;
 import com.watchtogether.roomservice.kafka.KafkaProducer;
@@ -11,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -23,7 +23,9 @@ public class RoomService implements IRoomService {
     @Override
     public ActiveRoomEntity createRoom(CreateRoomRequest grpcRequest) { //TODO: надо как то получать id создателя из jwt, а не просто передавать
         ActiveRoomEntity activeRoom = new ActiveRoomEntity(
-                grpcRequest.getOwnerId(),
+                new ActiveRoomEntity.RoomParticipantEntity(
+                        grpcRequest.getRoomCreator().getUserId(),
+                        grpcRequest.getRoomCreator().getDisplayName()),
                 grpcRequest.getRoomName(),
                 grpcRequest.getRoomDescription(),
                 grpcRequest.getRoomType(),
@@ -56,51 +58,123 @@ public class RoomService implements IRoomService {
     }
 
     @Override
-    public boolean addParticipantToRoom(String roomId, String participantId) {
+    public JoinToRoomResponse.Builder addParticipantToRoom(String roomId, RoomParticipant participantRequest) {
         ActiveRoomEntity room = findRoomById(roomId);
 
-        if (room.isBanned(participantId)) {
-            log.warn("User {} is banned from room {}", participantId, roomId);
-            return false;
+        JoinToRoomResponse.Builder response = JoinToRoomResponse.newBuilder();
+
+        if (room.isBanned(participantRequest.getUserId())) {
+            log.warn("User {} is banned from room {}", participantRequest.getUserId(), roomId);
+            return response.setSuccess(false);
         }
 
-        if (room.getParticipantIds().size() >= room.getMaxParticipants()) {
+        if (room.getParticipants().size() >= room.getMaxParticipants()) {
             log.warn("Room {} is full", roomId);
-            return false;
+            return response.setSuccess(false);
         }
 
-        room.addParticipant(participantId);
+        room.addParticipant(new ActiveRoomEntity.RoomParticipantEntity(
+                participantRequest.getUserId(),
+                participantRequest.getDisplayName()));
         roomRepository.save(room);
 
-        log.info("User {} joined room {}", participantId, roomId);
-        return true;
+        log.info("User {} joined room {}", participantRequest.getUserId(), roomId);
+
+
+        return response
+                .setSuccess(true)
+                .setRoomId(room.getId())
+                .setRoomName(room.getName())
+                .setRoomDescription(room.getDescription())
+                .setRoomType(room.getType())
+                .setRoomCategory(room.getCategory())
+                .setMaxParticipants(room.getMaxParticipants())
+                .setParticipantNumber(room.getParticipants().size())
+                .setCreatedAt(Timestamp.newBuilder()
+                    .setSeconds(room.getCreatedAt().getEpochSecond())
+                    .setNanos(room.getCreatedAt().getNano())
+                    .build())
+                .addAllRoomParticipants(room.getParticipants().stream()
+                        .map(participant -> RoomParticipant.newBuilder()
+                                .setUserId(participant.getUserId())
+                                .setDisplayName(participant.getDisplayName())
+                                .build()).toList());
+
     }
 
     @Override
-    public boolean addParticipantToRoom(String roomId, String participantId, String password) {
-        ActiveRoomEntity room = findRoomById(roomId);
+    public JoinToRoomResponse.Builder addParticipantToRoom(AddParticipantRequest grpcRequest) {
+        ActiveRoomEntity room = findRoomById(grpcRequest.getRoomId());
 
-        if (room.isBanned(participantId)) {
-            log.warn("User {} is banned from room {}", participantId, roomId);
-            return false;
+        JoinToRoomResponse.Builder response = JoinToRoomResponse.newBuilder();
+
+        if (room.isBanned(grpcRequest.getParticipant().getUserId())) {
+            log.warn("User {} is banned from room {}", grpcRequest.getParticipant().getUserId(), grpcRequest.getRoomId());
+            return response.setSuccess(false);
         }
 
-        if (room.getParticipantIds().size() >= room.getMaxParticipants()) {
-            log.warn("Room {} is full", roomId);
-            return false;
+        if (room.getParticipants().size() >= room.getMaxParticipants()) {
+            log.warn("Room {} is full", grpcRequest.getRoomId());
+            return response.setSuccess(false);
         }
 
-        if (!password.isEmpty() && !room.getPasswordHash().equals(password)) { //TODO: add encode
-            log.warn("Incorrect password for user {}", participantId);
-            return false;
+        if (!grpcRequest.getPassword().isEmpty() && !room.getPasswordHash().equals(grpcRequest.getPassword())) { //TODO: add encode
+            log.warn("Incorrect password for user {}", grpcRequest.getParticipant().getUserId());
+            return response.setSuccess(false);
         }
 
-        room.addParticipant(participantId);
+        room.addParticipant(new ActiveRoomEntity.RoomParticipantEntity(
+                grpcRequest.getParticipant().getUserId(),
+                grpcRequest.getParticipant().getDisplayName()));
         roomRepository.save(room);
 
-        log.info("User {} joined room {}", participantId, roomId);
-        return true;
+        log.info("User {} joined room {}", grpcRequest.getParticipant().getUserId(), grpcRequest.getRoomId());
+
+        return response
+                .setSuccess(true)
+                .setRoomId(room.getId())
+                .setRoomName(room.getName())
+                .setRoomDescription(room.getDescription())
+                .setRoomType(room.getType())
+                .setRoomCategory(room.getCategory())
+                .setMaxParticipants(room.getMaxParticipants())
+                .setParticipantNumber(room.getParticipants().size())
+                .setCreatedAt(Timestamp.newBuilder()
+                        .setSeconds(room.getCreatedAt().getEpochSecond())
+                        .setNanos(room.getCreatedAt().getNano())
+                        .build())
+                .addAllRoomParticipants(room.getParticipants().stream()
+                        .map(participant -> RoomParticipant.newBuilder()
+                                .setUserId(participant.getUserId())
+                                .setDisplayName(participant.getDisplayName())
+                                .build()).toList());
     }
+
+//    @Override
+//    public boolean addParticipantToRoom(String roomId, String participantId, String password) {
+//        ActiveRoomEntity room = findRoomById(roomId);
+//
+//        if (room.isBanned(participantId)) {
+//            log.warn("User {} is banned from room {}", participantId, roomId);
+//            return false;
+//        }
+//
+//        if (room.getParticipantIds().size() >= room.getMaxParticipants()) {
+//            log.warn("Room {} is full", roomId);
+//            return false;
+//        }
+//
+//        if (!password.isEmpty() && !room.getPasswordHash().equals(password)) { //TODO: add encode
+//            log.warn("Incorrect password for user {}", participantId);
+//            return false;
+//        }
+//
+//        room.addParticipant(participantId);
+//        roomRepository.save(room);
+//
+//        log.info("User {} joined room {}", participantId, roomId);
+//        return true;
+//    }
 
     @Override
     public boolean removeParticipantFromRoom(String roomId, String userId) {
