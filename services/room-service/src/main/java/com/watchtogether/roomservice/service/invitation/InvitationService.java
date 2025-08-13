@@ -1,6 +1,9 @@
 package com.watchtogether.roomservice.service.invitation;
 
 import com.watchtogether.grpc.GenerateInvitationRequest;
+import com.watchtogether.grpc.JoinRoomByInviteRequest;
+import com.watchtogether.grpc.JoinToRoomResponse;
+import com.watchtogether.roomservice.entity.ActiveRoomEntity;
 import com.watchtogether.roomservice.entity.InvitationEntity;
 import com.watchtogether.roomservice.exception.InvalidInvitationException;
 import com.watchtogether.roomservice.repository.InvitationRepository;
@@ -45,12 +48,13 @@ public class InvitationService implements IInvitationService {
     }
 
     @Override
-    public boolean joinRoomByInvite(String code, String userId) {
+    public JoinToRoomResponse.Builder joinRoomByInvite(JoinRoomByInviteRequest grpcRequest) {
 
-        var invitationEntity = validateInvitation(code);
+        var invitationEntity = validateInvitation(grpcRequest.getInviteCode());
 
-        boolean result = roomService.addParticipantToRoom(invitationEntity.getRoomId(), userId);
-        return result;
+        return roomService.addParticipantToRoom(
+                invitationEntity.getRoomId(),
+                grpcRequest.getParticipant());
     }
 
     private InvitationEntity validateInvitation(String code) { // если не бросается исключение - все ок
