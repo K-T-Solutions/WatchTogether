@@ -215,7 +215,7 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
             </form>
           </div>
         </div>
-      </div>
+    </div>
     </div>
   );
 } 

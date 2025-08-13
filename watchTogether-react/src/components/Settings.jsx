@@ -6,6 +6,7 @@ import { UPDATE_USER_PROFILE, UPDATE_USER_LOGIN, UPDATE_USER_PASSWORD } from "..
 import { getUserFromToken } from "../utils/jwt";
 import Header from "./Header";
 import Notification from "./Notification";
+import EmailVerifyModal from "./EmailVerifyModal";
 import { GET_USER_CRED_QUERY, ENABLE_TWO_FACTOR_MUTATION, SEND_EMAIL_VERIFICATION_CODE, VERIFY_EMAIL_CODE } from "../graphql/auth";
 
 export default function Settings({ currentUser, onLogout }) {
@@ -215,6 +216,15 @@ export default function Settings({ currentUser, onLogout }) {
   const [emailCode, setEmailCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [isSending, setIsSending] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [resendTick, setResendTick] = useState(0); // to reset modal timer after resend
+  // Local-only notification preferences (frontend only for now)
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    friendRequests: true,
+    roomInvites: true,
+    messages: true,
+    mentions: true
+  });
 
   const startCooldown = (seconds = 30) => {
     setCooldown(seconds);
@@ -230,13 +240,10 @@ export default function Settings({ currentUser, onLogout }) {
   };
 
   const handleSendEmailCode = async () => {
-    if (!userId || isEmailVerified || cooldown > 0) return;
+    if (!userId || cooldown > 0) return false;
     try {
       setIsSending(true);
-      // query
-      // use Apollo Client directly via query to avoid new hooks; but here we can use refetch with different query
-      await refetch({ userId }); // keep cache warm
-      // run lightweight query via client from context of useQuery hook
+      await refetch({ userId });
       // eslint-disable-next-line no-undef
       await window.__APOLLO_CLIENT__.query({
         query: SEND_EMAIL_VERIFICATION_CODE,
@@ -244,23 +251,27 @@ export default function Settings({ currentUser, onLogout }) {
       });
       setNotification({ isVisible: true, message: 'Verification code sent to your email', type: 'success' });
       startCooldown(30);
+      setResendTick((v) => v + 1);
+      return true;
     } catch (e) {
       setNotification({ isVisible: true, message: `Failed to send code: ${e.message}` , type: 'error' });
+      return false;
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleVerifyEmailCode = async () => {
-    if (!emailCode.trim()) {
+  const handleVerifyEmailCode = async (codeFromModal) => {
+    const codeToUse = (codeFromModal ?? emailCode).trim();
+    if (!codeToUse) {
       setNotification({ isVisible: true, message: 'Enter verification code', type: 'error' });
-      return;
+      return false;
     }
     try {
       // eslint-disable-next-line no-undef
       const res = await window.__APOLLO_CLIENT__.query({
         query: VERIFY_EMAIL_CODE,
-        variables: { userId, code: emailCode.trim() },
+        variables: { userId, code: codeToUse },
         fetchPolicy: 'no-cache'
       });
       const ok = !!res?.data?.finishEmailVerification;
@@ -268,11 +279,14 @@ export default function Settings({ currentUser, onLogout }) {
         setNotification({ isVisible: true, message: 'Email verified successfully', type: 'success' });
         setEmailCode("");
         await refetchCreds();
-      } else {
-        setNotification({ isVisible: true, message: 'Invalid code', type: 'error' });
+        setShowEmailModal(false);
+        return true;
       }
+      setNotification({ isVisible: true, message: 'Invalid code', type: 'error' });
+      return false;
     } catch (e) {
       setNotification({ isVisible: true, message: `Failed to verify: ${e.message}`, type: 'error' });
+      return false;
     }
   };
 
@@ -756,21 +770,28 @@ export default function Settings({ currentUser, onLogout }) {
   const renderAccountSection = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-white text-2xl font-bold mb-2">Account Settings</h2>
+        <h2 className="text-white text-2xl font-bold mb-2">Account settings</h2>
         <p className="text-gray-400">Manage your account credentials and preferences</p>
       </div>
 
-      {/* Current Account Info Card */}
-      <div className="bg-gradient-to-br from-[#181828] to-[#121225] rounded-2xl p-6 border border-[#232346]/60 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div className="text-gray-400 text-sm">Current Username</div>
-            <div className="text-white text-xl font-semibold">{profileData?.login || currentUser?.username || 'Not set'}</div>
+      {/* Change Username (GitHub-like) */}
+      <div className="bg-[#181828] rounded-2xl border border-[#232346] p-6">
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <h3 className="text-white text-lg font-semibold">Change username</h3>
+            <div className="mt-3 text-sm text-gray-400">
+              Current: <span className="text-white font-medium">{profileData?.login || currentUser?.username || 'not set'}</span>
+            </div>
           </div>
-          <div className="space-y-3">
-            <div className="text-gray-400 text-sm">Current Email</div>
-            <div className="text-white text-xl font-semibold">{profileData?.displayEmail || currentUser?.email || 'Not set'}</div>
-          </div>
+          {!showLoginForm && (
+            <button
+              onClick={handleShowLoginForm}
+              disabled={updateLoginLoading}
+              className="shrink-0 h-10 px-4 rounded-md bg-[#232346] text-white hover:bg-[#2a2a4a] border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Change username
+            </button>
+          )}
         </div>
 
         <div className="mt-6 flex flex-wrap gap-4">
@@ -789,12 +810,67 @@ export default function Settings({ currentUser, onLogout }) {
             <span>Update Password</span>
           </button>
         </div>
+
+        {showPasswordForm && (
+          <div className="mt-6 border-t border-[#232346] pt-6 space-y-4">
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-2">Current password</label>
+              <input
+                type="password"
+                name="currentPassword"
+                value={accountData.currentPassword}
+                onChange={handleAccountChange}
+                className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Enter current password"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-2">New password</label>
+              <input
+                type="password"
+                name="newPassword"
+                value={accountData.newPassword}
+                onChange={handleAccountChange}
+                className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Enter new password"
+              />
+              <p className="text-gray-500 text-xs mt-1">Minimum 6 characters</p>
+            </div>
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-2">Confirm new password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={accountData.confirmPassword}
+                onChange={handleAccountChange}
+                className="w-full p-3 rounded-md bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Confirm new password"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveAccount}
+                disabled={updatePasswordLoading}
+                className="h-10 px-5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updatePasswordLoading ? 'Updating…' : 'Update password'}
+              </button>
+              <button
+                onClick={() => setShowPasswordForm(false)}
+                disabled={updatePasswordLoading}
+                className="h-10 px-5 rounded-md bg-[#232346] hover:bg-[#2a2a4a] text-white border border-[#2b2b4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Security / Email Verify + 2FA Card */}
       <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346] space-y-6">
         {/* Email verification row */}
-        <div className="flex flex-col md:flex-row md:items-end gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1">
             <h3 className="text-white text-lg font-semibold">Email verification</h3>
             <p className="text-gray-400 text-sm mt-1">Verify your email to enable advanced security features</p>
@@ -883,36 +959,51 @@ export default function Settings({ currentUser, onLogout }) {
         </div>
       </div>
 
-      {/* Login Update Form */}
-      {showLoginForm && (
-        <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346] space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-white text-lg font-semibold">Update Username</h3>
+      {/* The old separate forms were merged into the cards above */}
+    </div>
+  );
+
+  const renderPrivacySection = () => (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-white text-2xl font-bold mb-2">Privacy Settings</h2>
+        <p className="text-gray-400">Control who can see your information</p>
+      </div>
+      <div className="bg-[#181828] rounded-xl p-6 border border-[#232346]">
+        <p className="text-gray-400">Privacy settings will be implemented soon...</p>
+      </div>
+    </div>
+  );
+
+  const renderNotificationsSection = () => (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-white text-2xl font-bold mb-2">Notification preferences</h2>
+        <p className="text-gray-400">Choose what to be notified about</p>
+      </div>
+
+      <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346]">
+        <div className="divide-y divide-[#232346]">
+          {/* Friend requests */}
+          <div className="py-4 flex items-center justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">🤝</div>
+              <div>
+                <div className="text-white font-medium">Friend requests</div>
+                <div className="text-gray-400 text-sm">Get notified when someone sends you a friend request</div>
+              </div>
+            </div>
             <button
               onClick={() => setShowLoginForm(false)}
               className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.friendRequests ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
-          
-          <div>
-            <label className="block text-gray-400 text-sm font-medium mb-2">
-              New Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={accountData.username}
-              onChange={handleAccountChange}
-              className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter new username..."
-            />
-            <p className="text-gray-500 text-xs mt-1">Minimum 3 characters</p>
-          </div>
-
           <div className="flex gap-4">
             <button
               onClick={handleSaveAccount}
@@ -933,68 +1024,33 @@ export default function Settings({ currentUser, onLogout }) {
               disabled={updateLoginLoading}
               className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              Cancel
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.roomInvites ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
-        </div>
-      )}
 
-      {/* Password Update Form */}
-      {showPasswordForm && (
-        <div className="bg-[#181828] rounded-2xl p-6 border border-[#232346] space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-white text-lg font-semibold">Update Password</h3>
+          {/* Messages */}
+          <div className="py-4 flex items-center justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#232346] text-indigo-300">💬</div>
+              <div>
+                <div className="text-white font-medium">Messages</div>
+                <div className="text-gray-400 text-sm">Receive notifications for new direct messages</div>
+              </div>
+            </div>
             <button
               onClick={() => setShowPasswordForm(false)}
               className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.messages ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
             </button>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-gray-400 text-sm font-medium mb-2">
-                Current Password
-              </label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={accountData.currentPassword}
-                onChange={handleAccountChange}
-                className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter current password..."
-              />
-            </div>
-            <div>
-              <label className="block text-gray-400 text-sm font-medium mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                name="newPassword"
-                value={accountData.newPassword}
-                onChange={handleAccountChange}
-                className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter new password..."
-              />
-              <p className="text-gray-500 text-xs mt-1">Minimum 6 characters</p>
-            </div>
-            <div>
-              <label className="block text-gray-400 text-sm font-medium mb-2">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={accountData.confirmPassword}
-                onChange={handleAccountChange}
-                className="w-full p-4 rounded-lg bg-[#232346] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Confirm new password..."
-              />
-            </div>
           </div>
 
           <div className="flex gap-4">
@@ -1017,34 +1073,14 @@ export default function Settings({ currentUser, onLogout }) {
               disabled={updatePasswordLoading}
               className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              Cancel
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  notificationPrefs.mentions ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
         </div>
-      )}
-    </div>
-  );
-
-  const renderPrivacySection = () => (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-white text-2xl font-bold mb-2">Privacy Settings</h2>
-        <p className="text-gray-400">Control who can see your information</p>
-      </div>
-      <div className="bg-[#181828] rounded-xl p-6 border border-[#232346]">
-        <p className="text-gray-400">Privacy settings will be implemented soon...</p>
-      </div>
-    </div>
-  );
-
-  const renderNotificationsSection = () => (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-white text-2xl font-bold mb-2">Notification Settings</h2>
-        <p className="text-gray-400">Manage your notification preferences</p>
-      </div>
-      <div className="bg-[#181828] rounded-xl p-6 border border-[#232346]">
-        <p className="text-gray-400">Notification settings will be implemented soon...</p>
       </div>
     </div>
   );
@@ -1071,16 +1107,16 @@ export default function Settings({ currentUser, onLogout }) {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="mb-4">
               <button
                 onClick={() => navigate('/profile')}
                 className="text-gray-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           >
+                <svg className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
+                <span className="text-white text-3xl font-bold">Settings</span>
               </button>
-              <h1 className="text-white text-3xl font-bold">Settings</h1>
             </div>
             {/*<p className="text-gray-400">Manage your account settings and preferences</p>*/}
           </div>
@@ -1116,6 +1152,17 @@ export default function Settings({ currentUser, onLogout }) {
           </div>
         </div>
       </div>
+      {showEmailModal && !isEmailVerified && (
+        <EmailVerifyModal
+          email={profileData?.displayEmail || currentUser?.email}
+          onClose={() => setShowEmailModal(false)}
+          onVerify={handleVerifyEmailCode}
+          onResend={handleSendEmailCode}
+          resendCooldown={cooldown}
+          isResending={isSending}
+          resetSignal={resendTick}
+        />
+      )}
     </div>
   );
 } 
