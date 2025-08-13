@@ -2,7 +2,9 @@ package com.watchtogether.apigateway.util;
 
 import com.watchtogether.apigateway.enums.GraphQLRoomCategory;
 import com.watchtogether.apigateway.enums.GraphQLRoomType;
+import com.watchtogether.apigateway.graphql.controller.RoomController;
 import com.watchtogether.grpc.RoomCategory;
+import com.watchtogether.grpc.RoomParticipant;
 import com.watchtogether.grpc.RoomType;
 import org.springframework.stereotype.Component;
 
@@ -78,6 +80,19 @@ public class RoomMapper {
             case PRIVATE ->  RoomType.PRIVATE;
             case PUBLIC ->  RoomType.PUBLIC;
         };
+    }
+
+    public RoomParticipant mapParticipantToGrpc(RoomParticipant grpcParticipant) {
+        return RoomParticipant.newBuilder()
+                .setUserId(grpcParticipant.getUserId())
+                .setDisplayName(grpcParticipant.getDisplayName())
+                .build();
+    }
+
+    public RoomController.RoomParticipant mapParticipantToGraphQL(RoomParticipant grpcParticipant) {
+        return new RoomController.RoomParticipant(
+                grpcParticipant.getUserId(),
+                grpcParticipant.getDisplayName());
     }
 
 }
