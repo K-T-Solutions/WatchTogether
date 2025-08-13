@@ -13,28 +13,30 @@ extend type Query {
     # Получение комнат по категории
     getRoomsByCategory(category: RoomCategory!): RoomListResponse!
 
-    joinRoomByInvite(inviteCode: String!, userId: ID!): Boolean!
+
+    joinRoomByInvite(inviteCode: String!, userId: ID!, userName: String!): JoinRoomResponse!
+
+
 }
 
 extend type Mutation {
     # Создание новой комнаты
-    createRoom(input: CreateRoomRequest!): CreateRoomResponse!
+    createRoom(input: CreateRoomRequest!): CreateRoomResponse
 
     # Добавление участника в комнату
-    addParticipantToRoom(roomId: ID!, participantId: ID!, password: String): Boolean
+    joinToRoom(request: AddParticipantRequest!): JoinRoomResponse!
 
     # Удаление участника из комнаты
     removeParticipantFromRoom(roomId: ID!, participantId: ID!): Boolean
 
     generateInvitation(input: GenerateInvitationRequest!): GenerateInvitationResponse!
-
 }
 
 # ========== Основные типы ==========
 
 type RoomResponse {
     roomId: ID!
-    ownerId: ID!
+    roomCreator: RoomParticipant!
     roomName: String!
     roomDescription: String
     roomType: RoomType!
@@ -43,12 +45,6 @@ type RoomResponse {
     needPassword: Boolean!
     participantsNumber: Int!
     createdAt:  String!
-#    participantIds: [ID!]!
-#    createdAt: String # ISO timestamp
-#    status: RoomStatus!
-#    # Дополнительные поля для UI
-#    participantCount: Int!
-#    canJoin: Boolean! # вычисляемое поле
 }
 
 type RoomListResponse {
@@ -77,10 +73,30 @@ type GenerateInvitationResponse {
     code: String
 }
 
+type JoinRoomResponse {
+    success: Boolean!
+    message: String!
+    roomId: ID
+    roomName: String
+    roomDescription: String
+    roomType: RoomType
+    roomCategory: RoomCategory
+    maxParticipants: Int
+    participantsNumber: Int
+    createdAt:  String
+    roomParticipants: [RoomParticipant]
+}
+
+type RoomParticipant {
+    userId: ID!
+    displayName: String
+}
+
 # ========== Входные типы ==========
 
 input CreateRoomRequest {
     ownerId: ID!
+    ownerDisplayName: String!
     roomName: String!
     roomDescription: String
     roomType: RoomType!
@@ -89,11 +105,12 @@ input CreateRoomRequest {
     maxParticipants: Int! # Обязательное поле, 0 = unlimited
 }
 
-#input AddParticipantRequest {
-#    roomId: ID!
-#    participantId: ID!
-#    password: String # если комната приватная
-#}
+input AddParticipantRequest {
+    roomId: ID!
+    participantId: ID!
+    participantDisplayName: String!
+    password: String # если комната приватная
+}
 
 input RemoveParticipantRequest {
     roomId: ID!
