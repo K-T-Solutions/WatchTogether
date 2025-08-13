@@ -13,6 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class CreateRoomInput {
     private String ownerId;
+    private String ownerDisplayName;
     private String roomName;
     private String  roomDescription;
     private GraphQLRoomType roomType;
