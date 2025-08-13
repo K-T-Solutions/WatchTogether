@@ -29,14 +29,17 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
         var roomEntity = roomService.findRoomById(request.getRoomId());
         responseObserver.onNext(RoomResponse.newBuilder()
                         .setRoomId(roomEntity.getId())
-                        .setOwnerId(roomEntity.getOwnerId())
+                        .setRoomCreator(RoomParticipant.newBuilder()
+                                .setUserId(roomEntity.getOwnerId())
+                                .setDisplayName(roomEntity.getParticipant(roomEntity.getOwnerId()).getDisplayName()) //TODO: improve
+                                .build())
                         .setRoomName(roomEntity.getName())
                         .setRoomDescription(roomEntity.getDescription())
                         .setRoomType(roomEntity.getType())
                         .setRoomCategory(roomEntity.getCategory())
                         .setMaxParticipants(roomEntity.getMaxParticipants())
                         .setNeedPassword(!roomEntity.getPasswordHash().isEmpty())
-                        .setParticipantNumber(roomEntity.getParticipantIds().size())
+                        .setParticipantNumber(roomEntity.getParticipants().size())
                         .setCreatedAt(Timestamp.newBuilder()
                                 .setSeconds(roomEntity.getCreatedAt().getEpochSecond())
                                 .setNanos(roomEntity.getCreatedAt().getNano())
@@ -94,23 +97,23 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
 
     @Override
     public void addParticipantToRoom(AddParticipantRequest request,
-                                     StreamObserver<AddParticipantResponse> responseObserver
+                                     StreamObserver<JoinToRoomResponse> responseObserver
     ) { //TODO: ну тут как то надо все же проверять
 
-        boolean success;
+        JoinToRoomResponse.Builder responseBuilder;
 
         if (request.getPassword().isEmpty()) {
-            success = roomService.addParticipantToRoom(request.getRoomId(), request.getParticipantId());
+            responseBuilder = roomService.addParticipantToRoom(request.getRoomId(), request.getParticipant()); //TODO: improve here
             log.info("two par");
             log.info("pass: {}", request.getPassword());
         } else {
             log.info("three par");
-            success = roomService.addParticipantToRoom(request.getRoomId(), request.getParticipantId(), request.getPassword());
+            responseBuilder = roomService.addParticipantToRoom(request);
         }
 
-        responseObserver.onNext(AddParticipantResponse.newBuilder()
-                        .setSuccess(success)
-                        .setMessage(success ? "Participant added successfully" : "Participant not added")
+        responseObserver.onNext(
+                responseBuilder
+                        .setMessage(responseBuilder.getSuccess() ? "Participant joined successfully" : "Participant not joined")
                         .build());
         responseObserver.onCompleted();
     }
@@ -122,7 +125,7 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
         boolean success = roomService.removeParticipantFromRoom(request.getRoomId(), request.getParticipantId()); //TODO: ловить искл.
         responseObserver.onNext(RemoveParticipantResponse.newBuilder()
                 .setSuccess(success)
-                .setMessage(success ? "Participant removed successfully" : "Participant not removed")
+                .setMessage(success ? "Participant leaved successfully" : "Participant not leaved")
                 .build());
         responseObserver.onCompleted();
     }
@@ -140,34 +143,39 @@ public class RoomGrpcController extends com.watchtogether.grpc.RoomServiceGrpc.R
     }
 
     @Override
-    public void joinRoomByInvite(JoinRoomByInviteRequest request, StreamObserver<JoinRoomByInviteResponse> responseObserver) {
-
-        boolean result = invitationService.joinRoomByInvite(request.getInviteCode(), request.getUserId());
-        responseObserver.onNext(JoinRoomByInviteResponse.newBuilder().setSuccess(result).build());
+    public void joinRoomByInvite(
+            JoinRoomByInviteRequest request,
+            StreamObserver<JoinToRoomResponse> responseObserver
+    ) {
+//        var result = invitationService.joinRoomByInvite(request);
+        JoinToRoomResponse.Builder responseBuilder = invitationService.joinRoomByInvite(request);
+        responseObserver.onNext(
+                responseBuilder
+                        .setMessage(responseBuilder.getSuccess() ? "Participant joined successfully" : "Participant not joined")
+                        .build());
         responseObserver.onCompleted();
     }
+
+
 
     private RoomResponse mapToGrpcRoomResponse(ActiveRoomEntity entity) {
         return RoomResponse.newBuilder()
                 .setRoomId(entity.getId())
-                .setOwnerId(entity.getOwnerId())
+                .setRoomCreator(RoomParticipant.newBuilder()
+                        .setUserId(entity.getOwnerId())
+                        .setDisplayName(entity.getParticipant(entity.getOwnerId()).getDisplayName()) //TODO: improve
+                        .build())
                 .setRoomName(entity.getName())
                 .setRoomDescription(entity.getDescription() != null ? entity.getDescription() : "")
                 .setRoomType(entity.getType())
                 .setRoomCategory(entity.getCategory())
                 .setMaxParticipants(entity.getMaxParticipants())
                 .setNeedPassword(!entity.getPasswordHash().isEmpty())
-                .setParticipantNumber(entity.getParticipantIds().size())
+                .setParticipantNumber(entity.getParticipants().size())
                 .setCreatedAt(Timestamp.newBuilder()
                         .setSeconds(entity.getCreatedAt().getEpochSecond())
                         .setNanos(entity.getCreatedAt().getNano())
                         .build())
-//                .addAllParticipantIds(entity.getParticipantIds()) // если есть список участников
-//                .setCreatedAt(Timestamp.newBuilder()
-//                        .setSeconds(entity.getCreatedAt().getEpochSecond())
-//                        .setNanos(entity.getCreatedAt().getNano())
-//                        .build())
-//                .setStatus(mapStatusToGrpc(entity.getStatus()))
                 .build();
     }
 

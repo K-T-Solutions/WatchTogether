@@ -26,14 +26,14 @@ service RoomService {
   rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
 
   // Add participant to room
-  rpc AddParticipantToRoom(AddParticipantRequest) returns (AddParticipantResponse);
+  rpc AddParticipantToRoom(AddParticipantRequest) returns (JoinToRoomResponse);
 
   // Remove participant from room
   rpc RemoveParticipantFromRoom(RemoveParticipantRequest) returns (RemoveParticipantResponse);
 
   rpc GenerateInvitation(GenerateInvitationRequest) returns (GenerateInvitationResponse);
 
-  rpc JoinRoomByInvite(JoinRoomByInviteRequest) returns (JoinRoomByInviteResponse);
+  rpc JoinRoomByInvite(JoinRoomByInviteRequest) returns (JoinToRoomResponse);
 
 }
 
@@ -51,7 +51,7 @@ message GetRoomsByCategoryRequest {
 }
 
 message CreateRoomRequest {
-  string owner_id = 1;
+  RoomParticipant room_creator = 1;
   string room_name = 2;
   string room_description = 3;
   RoomType room_type = 4;
@@ -62,7 +62,7 @@ message CreateRoomRequest {
 
 message AddParticipantRequest {
   string room_id = 1;
-  string participant_id = 2;
+  RoomParticipant participant = 2;
   string password = 3;
 }
 
@@ -80,13 +80,13 @@ message GenerateInvitationRequest {
 
 message JoinRoomByInviteRequest {
   string invite_code = 1;
-  string user_id = 2;
+  RoomParticipant participant = 2;
 }
 
 // Responses
 message RoomResponse {
   string room_id = 1;
-  string owner_id = 2;
+  RoomParticipant room_creator = 2;
   string room_name = 3;
   string room_description = 4;
   RoomType room_type = 5;
@@ -111,10 +111,18 @@ message CreateRoomResponse {
   //  RoomResponse room = 3; // populated if success = true
 }
 
-message AddParticipantResponse {
+message JoinToRoomResponse {
   bool success = 1;
   string message = 2;
-  int32 current_participant_count = 3;
+  string roomId = 3;
+  string roomName = 4;
+  string roomDescription = 5;
+  RoomType room_type = 6;
+  RoomCategory room_category = 7;
+  int32 max_participants = 8;
+  int32 participant_number = 9;
+  google.protobuf.Timestamp created_at = 10;
+  repeated RoomParticipant room_participants = 11;
 }
 
 message RemoveParticipantResponse {
@@ -158,10 +166,18 @@ enum RoomCategory {
   TESTING = 14;
   SOCIAL = 15;
   OTHER = 16;
-  NONE = 17;      // Другое
+  NONE = 17;
 }
 
 enum RoomType {
   PUBLIC = 0;
   PRIVATE = 1;
+}
+
+
+// Другое
+
+message RoomParticipant {
+  string user_id = 1;
+  string display_name = 2;
 }
