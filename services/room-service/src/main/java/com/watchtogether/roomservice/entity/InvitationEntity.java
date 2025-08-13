@@ -1,45 +1,75 @@
 package com.watchtogether.roomservice.entity;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import com.watchtogether.roomservice.exception.InvalidInvitationException;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.TimeToLive;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.util.UUID;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Entity
-@Table(name = "room_invitations")
-public class InvitationEntity {
+@RedisHash(value = "rooms_invitation")
+public class InvitationEntity { //TODO: improve
     @Id
-    @GeneratedValue(generator = "UUID")
-    private UUID id;
+    private String code; // invite code
 
-    @Column(name = "room_id", nullable = false)
-    private UUID roomId;
+    private String roomId;
 
-    @Column(name = "created_by", nullable = false)
-    private UUID createdBy;
+    private String creatorId;
 
-    @Column(nullable = false, unique = true)
-    private String token;
-
-    @Column(name = "expires_at")
     private Instant expiresAt;
 
-    @Column(name = "can_be_used_times")
     private int maxUses = 1;
 
-    @Column(name = "uses_number")
     private int useCount = 0;
 
-    @Column(name = "created_at")
-    @CreationTimestamp
     private Instant createdAt;
+
+    @TimeToLive
+    private Long ttl = 1200L;
+
+    public InvitationEntity() {
+        createdAt = Instant.now();
+    }
+
+    public InvitationEntity(String code,
+                            String roomId,
+                            String creatorId,
+                            Duration duration,
+                            int maxUses) {
+        this();
+        this.roomId = roomId;
+        this.creatorId = creatorId;
+        expiresAt = Instant.now().plusSeconds(duration.toSeconds());
+        this.maxUses = maxUses;
+        this.ttl = duration.toSeconds(); //TODO: add func to generate token
+    }
+
+    public void use() {
+        this.useCount++;
+    }
+
+    public boolean canBeUsed() { //TODO: если максимум достигнется пусть удаляется
+        return !isExpired() && !isMaxUsesReached();
+    }
+
+    public boolean isExpired() {
+        return Instant.now().isAfter(expiresAt);
+    }
+
+    public boolean isMaxUsesReached() {
+        return useCount >= maxUses;
+    }
+
+    public int getRemainingUses() {
+        return Math.max(0, maxUses - useCount);
+    }
+
+    public Duration getTimeUntilExpiry() {
+        return Duration.between(Instant.now(), expiresAt);
+    }
 }

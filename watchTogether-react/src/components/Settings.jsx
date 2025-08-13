@@ -631,7 +631,7 @@ export default function Settings({ currentUser, onLogout }) {
           <div className="text-gray-400 mb-6">Failed to load settings data. Please try again.</div>
           <button 
             onClick={() => refetch()}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors"
+            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg transition-colors cursor-pointer"
           >
             Try Again
           </button>
@@ -656,7 +656,7 @@ export default function Settings({ currentUser, onLogout }) {
               alt="Avatar" 
               className="w-24 h-24 rounded-full border-4 border-indigo-500"
             />
-            <button className="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-full transition-colors shadow-lg">
+            <button className="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-full transition-colors shadow-lg cursor-pointer">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
@@ -726,7 +726,7 @@ export default function Settings({ currentUser, onLogout }) {
           <button
             onClick={handleSavePublicProfile}
             disabled={updateLoading || !hasUnsavedChanges}
-            className={`bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg transition ${
+            className={`bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg transition cursor-pointer ${
               updateLoading || !hasUnsavedChanges ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
             }`}
           >
@@ -742,7 +742,7 @@ export default function Settings({ currentUser, onLogout }) {
           <button
             onClick={handleCancelPublicProfile}
             disabled={updateLoading}
-            className={`px-6 py-3 bg-[#232346] text-white font-medium rounded-lg transition ${
+            className={`px-6 py-3 bg-[#232346] text-white font-medium rounded-lg transition cursor-pointer ${
               updateLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#2a2a4a]'
             }`}
           >
@@ -777,14 +777,14 @@ export default function Settings({ currentUser, onLogout }) {
           <button
             onClick={handleShowLoginForm}
             disabled={updateLoginLoading || updatePasswordLoading}
-            className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <span>Update Login</span>
           </button>
           <button
             onClick={handleShowPasswordForm}
             disabled={updateLoginLoading || updatePasswordLoading}
-            className="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <span>Update Password</span>
           </button>
@@ -822,7 +822,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={handleSendEmailCode}
               disabled={isEmailVerified || cooldown > 0 || isSending}
-              className={`px-4 py-3 rounded-lg font-semibold transition ${
+              className={`px-4 py-3 rounded-lg font-semibold transition cursor-pointer ${
                 isEmailVerified || cooldown > 0 || isSending
                 ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
                 : 'bg-indigo-500 hover:bg-indigo-600 text-white'
@@ -833,7 +833,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={handleVerifyEmailCode}
               disabled={isEmailVerified || !emailCode.trim()}
-              className={`px-4 py-3 rounded-lg font-semibold transition ${
+              className={`px-4 py-3 rounded-lg font-semibold transition cursor-pointer ${
                 isEmailVerified || !emailCode.trim()
                 ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
                 : 'bg-emerald-500 hover:bg-emerald-600 text-white'
@@ -864,7 +864,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={() => enableTwoFactor({ variables: { userId } })}
               disabled={!isEmailVerified || enable2faLoading}
-              className={`inline-flex items-center gap-2 font-semibold py-3 px-5 rounded-lg transition ${
+              className={`inline-flex items-center gap-2 font-semibold py-3 px-5 rounded-lg transition cursor-pointer ${
                 !isEmailVerified || enable2faLoading
                   ? 'bg-[#232346] text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-tr from-indigo-500 to-pink-500 text-white hover:opacity-90'
@@ -890,7 +890,7 @@ export default function Settings({ currentUser, onLogout }) {
             <h3 className="text-white text-lg font-semibold">Update Username</h3>
             <button
               onClick={() => setShowLoginForm(false)}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -917,7 +917,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={handleSaveAccount}
               disabled={updateLoginLoading}
-              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {updateLoginLoading ? (
                 <div className="flex items-center space-x-2">
@@ -931,7 +931,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={() => setShowLoginForm(false)}
               disabled={updateLoginLoading}
-              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               Cancel
             </button>
@@ -946,7 +946,7 @@ export default function Settings({ currentUser, onLogout }) {
             <h3 className="text-white text-lg font-semibold">Update Password</h3>
             <button
               onClick={() => setShowPasswordForm(false)}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1001,7 +1001,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={handleSaveAccount}
               disabled={updatePasswordLoading}
-              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {updatePasswordLoading ? (
                 <div className="flex items-center space-x-2">
@@ -1015,7 +1015,7 @@ export default function Settings({ currentUser, onLogout }) {
             <button
               onClick={() => setShowPasswordForm(false)}
               disabled={updatePasswordLoading}
-              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-[#232346] text-white font-medium rounded-lg hover:bg-[#2a2a4a] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               Cancel
             </button>
@@ -1074,7 +1074,7 @@ export default function Settings({ currentUser, onLogout }) {
             <div className="flex items-center gap-4 mb-4">
               <button
                 onClick={() => navigate('/profile')}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1093,7 +1093,7 @@ export default function Settings({ currentUser, onLogout }) {
                   <button
                     key={item.id}
                     onClick={() => setActiveSection(item.id)}
-                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors ${
+                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors cursor-pointer ${
                       activeSection === item.id
                         ? 'bg-indigo-500 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-[#232346]'

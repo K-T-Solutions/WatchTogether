@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Header from "./Header";
 
 // Demo data for chats
@@ -51,6 +51,7 @@ export default function Messenger(props) {
   const [input, setInput] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [dragging, setDragging] = useState(false);
+  const [showWarning, setShowWarning] = useState(true);
   const sidebarRef = useRef();
   const [search, setSearch] = useState("");
 
@@ -108,6 +109,28 @@ export default function Messenger(props) {
   return (
     <div className="w-screen h-screen flex flex-col bg-[#070710] text-white select-none relative">
       <Header {...props} />
+      
+      {/* Warning Modal */}
+      {showWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative bg-[#232346] rounded-2xl shadow-2xl p-8 max-w-md mx-4 border border-[#35356a]">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🚧</div>
+              <h3 className="text-white text-xl font-semibold mb-4">Messenger Coming Soon!</h3>
+              <p className="text-gray-300 mb-6">
+                The messenger functionality is currently under development. This is just a demo interface.
+              </p>
+              <button 
+                onClick={() => setShowWarning(false)}
+                className="bg-gradient-to-tr from-indigo-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition text-lg"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-1 h-0" style={{ paddingTop: 72 }}>
         {/* Sidebar */}
         <aside

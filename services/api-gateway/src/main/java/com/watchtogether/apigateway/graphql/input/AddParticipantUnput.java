@@ -1,20 +1,19 @@
-package com.watchtogether.roomservice.request;
+package com.watchtogether.apigateway.graphql.input;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Duration;
 import java.util.UUID;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class GenerateInviteRequest {
+public class AddParticipantUnput {
     private UUID roomId;
-    private UUID creatorId;
-    private Duration duration;
-    private int maxUses;
+    private UUID participantId;
+    private String participantDisplayName;
+    private String password;
 }

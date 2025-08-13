@@ -136,8 +136,8 @@ services:
     depends_on:
       - auth-service
       - user-profile-service
+      - room-service
       - redis
-      # - room-service # Раскомментируйте, когда добавите room-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATA_REDIS_HOST: redis
@@ -211,29 +211,31 @@ services:
       retries: 3
       start_period: 40s
 
-#  room-service:
-#    build:
-#      context: ./services/room-service
-#      dockerfile: Dockerfile
-#    container_name: wt-room-service
-#    ports:
-#      - "4004:4004" # HTTP/Actuator
+  room-service:
+    build:
+      context: ./services/room-service
+      dockerfile: Dockerfile
+    container_name: wt-room-service
+    ports:
+      - "4004:4004" # HTTP/Actuator
 #      - "9090:9090" # gRPC
-#    depends_on:
-##      auth-service-db:
-##        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#    env_file:
-#      - ./services/
-#    networks:
-#      - watchtogether-network
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:4002/actuator/health" ]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 3
-#      start_period: 40s
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    networks:
+      - watchtogether-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4004/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 
 volumes:

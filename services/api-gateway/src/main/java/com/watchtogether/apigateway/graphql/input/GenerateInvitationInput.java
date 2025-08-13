@@ -5,13 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
-@Setter
+import java.util.UUID;
+
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateUserProfileRequest {
-    private String userId;
-    private String displayName;
-    private String displayEmail;
-    private String bio;
+@Getter
+@Setter
+public class GenerateInvitationInput {
+    private UUID roomId;
+    private UUID creatorId;
+    private int durationSecs;
+    private int maxUses;
 }

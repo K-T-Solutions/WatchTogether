@@ -1,48 +1,154 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
 option java_multiple_files = true;
 option java_package = "com.watchtogether.grpc";
 option java_outer_classname = "RoomServiceProto";
 
-//package room;
-
+// Room service for managing watch-together rooms
 service RoomService {
-  // Получение комнаты по ID
-  rpc GetRoomById (RoomIdRequestGrpc) returns (RoomResponseGrpc) {}
+  // Get room by ID
+  rpc GetRoomById(GetRoomByIdRequest) returns (RoomResponse);
 
-  // Получение всех комнат
-  rpc GetAllRooms (EmptyGrpc) returns (RoomListResponseGrpc) {}
+  // Get rooms owned by specific user
+  rpc GetRoomByOwnerId(GetRoomByOwnerIdRequest) returns (RoomResponse);
 
-  // Получение комнат по категории
-  rpc GetRoomsByCategory (CategoryRequestGrpc) returns (RoomListResponseGrpc) {}
+  // Get all public rooms
+  rpc GetAllPublicRooms(google.protobuf.Empty) returns (RoomListResponse);
 
-  // Создание новой комнаты
-  rpc CreateRoom (CreateRoomRequestGrpc) returns (RoomResponseGrpc) {}
+  // Get all rooms by category
+  rpc GetRoomsByCategory(GetRoomsByCategoryRequest) returns (RoomListResponse);
 
-  // Обновление существующей комнаты
-  rpc UpdateRoom (UpdateRoomRequestGrpc) returns (RoomResponseGrpc) {}
+  // Create new room
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
+
+  // Add participant to room
+  rpc AddParticipantToRoom(AddParticipantRequest) returns (JoinToRoomResponse);
+
+  // Remove participant from room
+  rpc RemoveParticipantFromRoom(RemoveParticipantRequest) returns (RemoveParticipantResponse);
+
+  rpc GenerateInvitation(GenerateInvitationRequest) returns (GenerateInvitationResponse);
+
+  rpc JoinRoomByInvite(JoinRoomByInviteRequest) returns (JoinToRoomResponse);
+
 }
 
-// ========== Основные модели ==========
-
-message RoomGrpc {
-  string id = 1;               // UUID комнаты
-  string name = 2;              // Название комнаты
-  string description = 3;       // Описание комнаты
-  RoomTypeGrpc type = 4;            // Тип комнаты
-  RoomCategoryGrpc category = 5;    // Категория комнаты
-  //  string password_hash = 6;     // Хеш пароля (опционально)
-  int32 max_participants = 6;   // Максимальное количество участников
-  string owner_id = 7;          // UUID владельца комнаты
+// Requests
+message GetRoomByIdRequest {
+  string room_id = 1;
 }
 
-enum RoomTypeGrpc {
-  PUBLIC = 0;     // Публичная комната
-  PRIVATE = 1;    // Приватная комната
-  //  PASSWORD = 2;   // Комната с паролем
+message GetRoomByOwnerIdRequest {
+  string owner_id = 1;
 }
 
-enum RoomCategoryGrpc {
+message GetRoomsByCategoryRequest {
+  RoomCategory room_category = 1;
+}
+
+message CreateRoomRequest {
+  RoomParticipant room_creator = 1;
+  string room_name = 2;
+  string room_description = 3;
+  RoomType room_type = 4;
+  RoomCategory category = 5;
+  string room_password = 6;
+  int32 max_participants = 7; // 0 = unlimited
+}
+
+message AddParticipantRequest {
+  string room_id = 1;
+  RoomParticipant participant = 2;
+  string password = 3;
+}
+
+message RemoveParticipantRequest {
+  string room_id = 1;
+  string participant_id = 2;
+}
+
+message GenerateInvitationRequest {
+  string room_id = 1;
+  string creator_id = 2;
+  google.protobuf.Duration duration_secs = 3;
+  int32 max_uses = 4;
+}
+
+message JoinRoomByInviteRequest {
+  string invite_code = 1;
+  RoomParticipant participant = 2;
+}
+
+// Responses
+message RoomResponse {
+  string room_id = 1;
+  RoomParticipant room_creator = 2;
+  string room_name = 3;
+  string room_description = 4;
+  RoomType room_type = 5;
+  RoomCategory room_category = 6;
+  int32 max_participants = 7;
+  bool needPassword = 8;
+  int32 participant_number = 9;
+  google.protobuf.Timestamp created_at = 10;
+  //  repeated string participant_ids = 8;
+  //  google.protobuf.Timestamp created_at = 9;
+  //  RoomStatus status = 10; // надо или нет?
+}
+
+message RoomListResponse {
+  repeated RoomResponse rooms = 1;
+  //  int32 total_count = 2;
+}
+
+message CreateRoomResponse {
+  bool success = 1;
+  string message = 2;
+  //  RoomResponse room = 3; // populated if success = true
+}
+
+message JoinToRoomResponse {
+  bool success = 1;
+  string message = 2;
+  string roomId = 3;
+  string roomName = 4;
+  string roomDescription = 5;
+  RoomType room_type = 6;
+  RoomCategory room_category = 7;
+  int32 max_participants = 8;
+  int32 participant_number = 9;
+  google.protobuf.Timestamp created_at = 10;
+  repeated RoomParticipant room_participants = 11;
+}
+
+message RemoveParticipantResponse {
+  bool success = 1;
+  string message = 2;
+  int32 current_participant_count = 3;
+}
+
+message GenerateInvitationResponse {
+  bool success = 1;
+  string link = 2;
+}
+
+message JoinRoomByInviteResponse {
+  bool success = 1; //TODO: change
+}
+
+// Enums
+enum RoomStatus {
+  ROOM_STATUS_UNKNOWN = 0;
+  ROOM_STATUS_ACTIVE = 1;
+  ROOM_STATUS_PAUSED = 2;
+  ROOM_STATUS_ENDED = 3;
+}
+
+enum RoomCategory {
   MOVIES = 0;
   SERIES = 1;
   ANIME = 2;
@@ -60,48 +166,18 @@ enum RoomCategoryGrpc {
   TESTING = 14;
   SOCIAL = 15;
   OTHER = 16;
-  NONE = 17;      // Другое
+  NONE = 17;
 }
 
-// ========== Запросы и ответы ==========
-
-message RoomIdRequestGrpc {
-  string room_id = 1;  // UUID запрашиваемой комнаты
+enum RoomType {
+  PUBLIC = 0;
+  PRIVATE = 1;
 }
 
-message CategoryRequestGrpc {
-  string category = 1;  // Название категории для фильтрации
-}
 
-message CreateRoomRequestGrpc {
-  string name = 1;
-  string description = 2;
-  RoomTypeGrpc type = 3;
-  RoomCategoryGrpc category = 4;
-  string password = 5;         // Пароль в открытом виде (для комнат с паролем)
-  int32 max_participants = 6;
-  string owner_id = 7;         // UUID создателя комнаты надо убрать
-}
+// Другое
 
-message UpdateRoomRequestGrpc {
-  string room_id = 1;
-  string name = 2;
-  string description = 3;
-  RoomTypeGrpc type = 4;
-  RoomCategoryGrpc category = 5;
-  string owner_id = 6;         // UUID пользователя, инициирующего обновление
+message RoomParticipant {
+  string user_id = 1;
+  string display_name = 2;
 }
-
-message RoomResponseGrpc {
-  RoomGrpc room = 1;              // Основные данные комнаты
-  //  bool success = 2;           // Флаг успешности операции
-  //  string error_message = 3;   // Сообщение об ошибке (если success=false)
-}
-
-message RoomListResponseGrpc {
-  repeated RoomGrpc rooms = 1;    // Список комнат
-  //  bool success = 2;
-  //  string error_message = 3;
-}
-
-message EmptyGrpc {}
