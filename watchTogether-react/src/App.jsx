@@ -14,6 +14,7 @@ import Messenger from './components/Messenger';
 import About from './components/About';
 import Rooms from './components/Rooms';
 import Room from './components/Room';
+import InviteJoin from './components/InviteJoin.jsx';
 import './App.css'
 
 export default function App() {
@@ -154,6 +155,12 @@ export default function App() {
             currentUser={currentUser}
             onLogout={handleLogout}
             onRoomCreate={openRoomCreate}
+          />
+        } />
+        <Route path="/invite/:code" element={
+          <InviteJoin 
+            currentUser={currentUser}
+            isAuthenticated={isAuthenticated}
           />
         } />
         <Route path="/about" element={<About />} />

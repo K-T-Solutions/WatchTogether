@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
+export default function ProfileMenu({ currentUser, onLogout, onProfile, safeNavigate, isInRoom }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -18,7 +18,20 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
 
   const handleProfileClick = () => {
     setIsOpen(false);
-    onProfile();
+    if (isInRoom && safeNavigate) {
+      safeNavigate('/profile');
+    } else {
+      onProfile();
+    }
+  };
+
+  const handleLogout = () => {
+    setIsOpen(false);
+    if (isInRoom && safeNavigate) {
+      safeNavigate('/');
+    } else {
+      onLogout();
+    }
   };
 
   // Если currentUser равен null, не рендерим компонент
@@ -88,7 +101,7 @@ export default function ProfileMenu({ currentUser, onLogout, onProfile }) {
             <div className="border-t border-[#232346] my-1"></div>
 
             <button 
-              onClick={onLogout}
+              onClick={handleLogout}
               className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#232346] hover:text-red-300 transition-colors flex items-center space-x-3 cursor-pointer"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
