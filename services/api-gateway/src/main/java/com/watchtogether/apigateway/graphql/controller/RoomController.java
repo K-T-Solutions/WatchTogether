@@ -6,6 +6,7 @@ import com.watchtogether.apigateway.enums.GraphQLRoomType;
 import com.watchtogether.apigateway.graphql.input.AddParticipantUnput;
 import com.watchtogether.apigateway.graphql.input.CreateRoomInput;
 import com.watchtogether.apigateway.graphql.input.GenerateInvitationInput;
+import com.watchtogether.apigateway.graphql.input.JoinToRoomByInviteInput;
 import com.watchtogether.apigateway.grpc.RoomGrpcClient;
 import com.watchtogether.apigateway.util.RoomMapper;
 import com.watchtogether.grpc.GenerateInvitationRequest;
@@ -28,36 +29,19 @@ public class RoomController {
     private final RoomGrpcClient roomGrpcClient;
     private final RoomMapper roomMapper;
 
+    private final static String APP_DOMAIN = "http://localhost:5173/";
+    private final static String INVITE_SUBJECT = "invite/";
+
     @QueryMapping
     public RoomResponse getRoomById(@Argument UUID roomId) {
         var grpcResponse = roomGrpcClient.getRoomById(roomId.toString());
-        return new RoomResponse(
-                grpcResponse.getRoomId(),
-                roomMapper.mapParticipantToGraphQL(grpcResponse.getRoomCreator()),
-                grpcResponse.getRoomName(),
-                grpcResponse.getRoomDescription(),
-                roomMapper.mapTypeToGraphQL(grpcResponse.getRoomType()),
-                roomMapper.mapCategoryToGraphQL(grpcResponse.getRoomCategory()),
-                grpcResponse.getMaxParticipants(),
-                grpcResponse.getNeedPassword(),
-                grpcResponse.getParticipantNumber(),
-                grpcResponse.getCreatedAt().toString());
+        return roomMapper.mapRoomToGraphQL(grpcResponse);
     }
 
     @QueryMapping
     public RoomResponse getRoomByOwnerId(@Argument UUID ownerId) {
         var grpcResponse = roomGrpcClient.getRoomByOwnerId(ownerId.toString());
-        return new RoomResponse(
-                grpcResponse.getRoomId(),
-                roomMapper.mapParticipantToGraphQL(grpcResponse.getRoomCreator()),
-                grpcResponse.getRoomName(),
-                grpcResponse.getRoomDescription(),
-                roomMapper.mapTypeToGraphQL(grpcResponse.getRoomType()),
-                roomMapper.mapCategoryToGraphQL(grpcResponse.getRoomCategory()),
-                grpcResponse.getMaxParticipants(),
-                grpcResponse.getNeedPassword(),
-                grpcResponse.getParticipantNumber(),
-                grpcResponse.getCreatedAt().toString());
+        return roomMapper.mapRoomToGraphQL(grpcResponse);
     }
 
     @QueryMapping
@@ -65,17 +49,8 @@ public class RoomController {
         var grpcResponse = roomGrpcClient.getAllPublicRooms();
         return grpcResponse.getRoomsList()
                 .stream()
-                .map(room -> new RoomResponse(
-                        room.getRoomId(),
-                        roomMapper.mapParticipantToGraphQL(room.getRoomCreator()),
-                        room.getRoomName(),
-                        room.getRoomDescription(),
-                        roomMapper.mapTypeToGraphQL(room.getRoomType()),
-                        roomMapper.mapCategoryToGraphQL(room.getRoomCategory()),
-                        room.getMaxParticipants(),
-                        room.getNeedPassword(),
-                        room.getParticipantNumber(),
-                        room.getCreatedAt().toString())).toList();
+                .map(roomMapper::mapRoomToGraphQL)
+                .toList();
     }
 
     @QueryMapping
@@ -83,29 +58,32 @@ public class RoomController {
         var grpcResponse = roomGrpcClient.getRoomsByCategory(category);
         return grpcResponse.getRoomsList()
                 .stream()
-                .map(room -> new RoomResponse(
-                        room.getRoomId(),
-                        roomMapper.mapParticipantToGraphQL(room.getRoomCreator()),
-                        room.getRoomName(),
-                        room.getRoomDescription(),
-                        roomMapper.mapTypeToGraphQL(room.getRoomType()),
-                        roomMapper.mapCategoryToGraphQL(room.getRoomCategory()),
-                        room.getMaxParticipants(),
-                        room.getNeedPassword(),
-                        room.getParticipantNumber(),
-                        room.getCreatedAt().toString())).toList();
+                .map(roomMapper::mapRoomToGraphQL)
+                .toList();
     }
 
     @MutationMapping
-    public CreateRoomResponse createRoom(@Argument CreateRoomInput input) {
+    public JoinRoomResponse createRoom(@Argument CreateRoomInput input) {
         var grpcResponse = roomGrpcClient.createRoom(input);
 
-        return new CreateRoomResponse(
+        return new JoinRoomResponse(
                 grpcResponse.getSuccess(),
-                grpcResponse.getMessage());
+                grpcResponse.getMessage(),
+                grpcResponse.getRoomId(),
+                grpcResponse.getRoomName(),
+                grpcResponse.getRoomDescription(),
+                roomMapper.mapTypeToGraphQL(grpcResponse.getRoomType()),
+                roomMapper.mapCategoryToGraphQL(grpcResponse.getRoomCategory()),
+                grpcResponse.getMaxParticipants(),
+                grpcResponse.getParticipantNumber(),
+                grpcResponse.getCreatedAt().toString(),
+                grpcResponse.getRoomParticipantsList()
+                        .stream()
+                        .map(roomMapper::mapParticipantToGraphQL)
+                        .toList());
     }
 
-    @MutationMapping //TODO: change
+    @MutationMapping
     public JoinRoomResponse joinToRoom(@Argument AddParticipantUnput request) {
         var grpcResponse = roomGrpcClient.addParticipant(request);
 
@@ -145,17 +123,27 @@ public class RoomController {
                 .setMaxUses(input.getMaxUses())
                 .build());
 
+        String inviteLink = APP_DOMAIN + INVITE_SUBJECT + grpcResponse.getLink();
+
         return new GenerateInvitationResponse(
                 grpcResponse.getSuccess(),
-                grpcResponse.getLink());
+                inviteLink);
     }
 
     @QueryMapping
-    public JoinRoomResponse joinRoomByInvite(@Argument String inviteCode,
-                                             @Argument UUID userId,
-                                             @Argument String userName
+    public ValidateInvitationResponse validateInvitation(@Argument String inviteCode,
+                                                         @Argument UUID userId
     ) {
-        var grpcResponse = roomGrpcClient.joinRoomByInvite(inviteCode, userId.toString(), userName);
+        var grpcResponse = roomGrpcClient.validateInvitation(inviteCode, userId.toString());
+        return new ValidateInvitationResponse(
+                grpcResponse.getSuccess(),
+                grpcResponse.getMessage(),
+                roomMapper.mapRoomToGraphQL(grpcResponse.getRoom()));
+    }
+
+    @MutationMapping
+    public JoinRoomResponse joinToRoomByInvite(@Argument JoinToRoomByInviteInput input) {
+        var grpcResponse = roomGrpcClient.joinToRoomByInvite(input);
 
         return new JoinRoomResponse(
                 grpcResponse.getSuccess(),
@@ -209,5 +197,9 @@ public class RoomController {
                                    int participantsNumber,
                                    String createdAt,
                                    List<RoomParticipant> roomParticipants) {}
+
+    public record ValidateInvitationResponse(boolean success,
+                                             String message,
+                                             RoomResponse room) {}
 
 }
