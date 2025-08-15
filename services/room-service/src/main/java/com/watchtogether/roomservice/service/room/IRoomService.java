@@ -16,9 +16,9 @@ public interface IRoomService {
 
     List<ActiveRoomEntity> findAllRoomsByCategory(RoomCategory roomCategory);
 
-    JoinToRoomResponse.Builder addParticipantToRoom(String roomId, RoomParticipant participantRequest);
-
-    JoinToRoomResponse.Builder addParticipantToRoom(AddParticipantRequest grpcRequest);
+    JoinToRoomResponse.Builder joinToRoom(AddParticipantRequest grpcRequest);
 
     boolean removeParticipantFromRoom(String roomId, String participantId);
+
+    ActiveRoomEntity addParticipantToRoom(AddParticipantRequest grpcRequest);
 }

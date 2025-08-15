@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useMutation, useQuery } from '@apollo/client';
 import Header from './Header';
 import { JOIN_TO_ROOM, REMOVE_PARTICIPANT_FROM_ROOM } from '../graphql/mutations';
@@ -28,7 +28,10 @@ export default function Room({ currentUser, onClose, onLogout }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [room, setRoom] = useState(null);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { roomId } = useParams();
   
   const [joinRoomMutation] = useMutation(JOIN_TO_ROOM);
@@ -41,19 +44,182 @@ export default function Room({ currentUser, onClose, onLogout }) {
       variables: { roomId },
       skip: !roomId,
       fetchPolicy: 'network-only',
+      onCompleted: (data) => {
+        console.log('GET_ROOM_BY_ID completed:', data);
+      },
+      onError: (error) => {
+        console.error('GET_ROOM_BY_ID error:', error);
+      }
     }
   );
 
   // Реальные участники придут из joinToRoom -> room.roomParticipants
 
+  // ===== ФУНКЦИИ НАВИГАЦИИ (должны быть объявлены до useEffect) =====
+  
+  // Функция для безопасной навигации из комнаты
+  const safeNavigate = (path) => {
+    setPendingNavigation(path);
+    setShowExitConfirmation(true);
+  };
+
+  // Функция для отмены выхода
+  const cancelExit = () => {
+    setShowExitConfirmation(false);
+    setPendingNavigation(null);
+  };
+
+  // Функция для выхода из комнаты
+  const handleLeaveRoom = async () => {
+    try {
+      if (roomId && currentUser?.id) {
+        await removeParticipant({
+          variables: { roomId: String(roomId), participantId: String(currentUser.id) },
+        });
+      }
+    } catch (e) {
+      console.warn('Leave room error:', e);
+    } finally {
+      if (onClose) {
+        onClose();
+      } else {
+        navigate('/rooms');
+      }
+    }
+  };
+
+  // ===== useEffect ХУКИ =====
+
+  // Обработка навигации браузера (кнопки назад/вперед)
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (room && currentUser?.id) {
+        e.preventDefault();
+        e.returnValue = 'Are you sure you want to leave the room?';
+        return 'Are you sure you want to leave the room?';
+      }
+    };
+
+    const handlePopState = (e) => {
+      if (room && currentUser?.id) {
+        // Предотвращаем навигацию назад/вперед без подтверждения
+        e.preventDefault();
+        safeNavigate(location.pathname);
+        // Восстанавливаем текущий URL
+        window.history.pushState(null, '', location.pathname);
+      }
+    };
+
+    if (room && currentUser?.id) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener('popstate', handlePopState);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [room, currentUser?.id, safeNavigate, location.pathname]);
+
+  // Отслеживаем изменения в roomData и устанавливаем room state
+  useEffect(() => {
+    if (roomData?.getRoomById) {
+      console.log('Setting room from roomData:', roomData.getRoomById);
+      console.log('Current room state before update:', room);
+      console.log('Room participants from roomData:', roomData.getRoomById.roomParticipants);
+      console.log('Setting room state to:', roomData.getRoomById);
+      setRoom(roomData.getRoomById);
+    }
+  }, [roomData]);
+
   // При заходе в комнату — присоединяемся, затем грузим реальные данные
   useEffect(() => {
-    if (!roomId || !currentUser?.id) return;
-    if (joinCalledRef.current) return;
+    if (!roomId || !currentUser?.id) {
+      console.log('Missing required data for join:', { roomId, currentUserId: currentUser?.id });
+      return;
+    }
+
+    console.log('Room useEffect triggered:', { roomId, currentUserId: currentUser.id });
+
+    // If navigation came from invite, respect state flag and set guard
+    let navigatedJoined = false;
+    try {
+      const historyState = window.history.state;
+      console.log('Full history state:', historyState);
+      // Проверяем оба варианта: state.usr.joined и state.joined
+      navigatedJoined = Boolean(
+        (historyState && historyState.usr && historyState.usr.joined) ||
+        (historyState && historyState.joined)
+      );
+      console.log('Navigation state check:', { 
+        historyState, 
+        usr: historyState?.usr, 
+        usrJoined: historyState?.usr?.joined,
+        directJoined: historyState?.joined,
+        navigatedJoined 
+      });
+    } catch (_) {
+      navigatedJoined = false;
+    }
+
+    const dedupeKey = `room_join:${roomId}:${currentUser.id}`;
+    let alreadyJoined = sessionStorage.getItem(dedupeKey) === 'done';
+    console.log('Join status:', { dedupeKey, alreadyJoined, navigatedJoined });
+    console.log('SessionStorage content:', {
+      [dedupeKey]: sessionStorage.getItem(dedupeKey),
+      allKeys: Object.keys(sessionStorage)
+    });
+
+    // ВАЖНО: Проверяем, действительно ли пользователь является участником комнаты
+    // Просто флаг в sessionStorage не гарантирует, что пользователь в БД
+    const isActuallyParticipant = roomData?.getRoomById?.roomParticipants?.some(
+      p => p.userId === currentUser.id
+    );
+    console.log('Actual participant check:', { 
+      roomData: roomData?.getRoomById, 
+      roomParticipants: roomData?.getRoomById?.roomParticipants,
+      currentUserId: currentUser.id,
+      isActuallyParticipant,
+      roomDataExists: !!roomData,
+      getRoomByIdExists: !!roomData?.getRoomById,
+      participantsArrayExists: !!roomData?.getRoomById?.roomParticipants
+    });
+
+    // Если пользователь уже присоединился И является реальным участником
+    if ((alreadyJoined || navigatedJoined) && isActuallyParticipant) {
+      sessionStorage.setItem(dedupeKey, 'done');
+      joinCalledRef.current = true;
+      console.log('Already joined AND is actual participant, just fetching room info');
+      // still fetch latest room info
+      refetchRoom();
+      return;
+    }
+
+    // Если флаг есть, но пользователь не участник - очищаем флаг
+    if (alreadyJoined && !isActuallyParticipant) {
+      console.log('Flag exists but user is not participant, clearing flag and joining');
+      sessionStorage.removeItem(dedupeKey);
+      alreadyJoined = false;
+    }
+
+    if (joinCalledRef.current) {
+      console.log('Join already called, skipping');
+      return;
+    }
+    
+    console.log('Starting join process - user will be added to room');
+    console.log('This means joinToRoom mutation WILL be called');
+    sessionStorage.setItem(dedupeKey, 'done');
     joinCalledRef.current = true;
 
     const join = async () => {
       try {
+        console.log('Calling joinToRoom mutation with data:', {
+          roomId: String(roomId),
+          participantId: String(currentUser.id),
+          participantDisplayName: currentUser.displayName || currentUser.username || currentUser.login || 'User',
+        });
+        
         const { data } = await joinRoomMutation({
           variables: {
             request: {
@@ -65,16 +231,22 @@ export default function Room({ currentUser, onClose, onLogout }) {
           },
         });
 
+        console.log('Join mutation result:', data);
         const payload = data?.joinToRoom;
         if (!payload || !payload.success) {
           console.warn('Join failed:', payload?.message);
+          // Убираем флаг из sessionStorage если join не удался
+          sessionStorage.removeItem(dedupeKey);
           navigate('/rooms');
           return;
         }
 
+        console.log('Join successful! User is now in room');
+        
         // Если сервер возвращает всю комнату — можно сразу положить в state
         if (payload.roomId && payload.roomName) {
-          setRoom({
+          console.log('Setting room from join response');
+          const newRoomData = {
             roomId: payload.roomId,
             roomName: payload.roomName,
             roomDescription: payload.roomDescription,
@@ -84,23 +256,33 @@ export default function Room({ currentUser, onClose, onLogout }) {
             participantsNumber: payload.participantsNumber,
             createdAt: payload.createdAt,
             roomParticipants: payload.roomParticipants || [],
-          });
+          };
+          console.log('New room data from join response:', newRoomData);
+          setRoom(newRoomData);
         }
 
         // Подтянуть актуальные данные по ID (например, creator)
+        console.log('Refetching room data after successful join');
         const refreshed = await refetchRoom();
         const updated = refreshed?.data?.getRoomById || null;
+        console.log('Refreshed room data:', updated);
         setRoom(prev => (updated ? { ...updated, roomParticipants: prev?.roomParticipants || [] } : prev));
       } catch (e) {
         console.error('Join error:', e);
+        // Убираем флаг из sessionStorage если произошла ошибка
+        sessionStorage.removeItem(dedupeKey);
         try {
+          console.log('Trying to fetch room data after join error');
           const refreshed = await refetchRoom();
           const maybeRoom = refreshed?.data?.getRoomById || null;
           if (maybeRoom) {
+            console.log('Setting room from fallback fetch');
             setRoom(maybeRoom);
             return;
           }
-        } catch (_) {}
+        } catch (fallbackError) {
+          console.error('Fallback fetch also failed:', fallbackError);
+        }
         navigate('/rooms');
       }
     };
@@ -140,35 +322,43 @@ export default function Room({ currentUser, onClose, onLogout }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleLeaveRoom = async () => {
-    try {
-      if (roomId && currentUser?.id) {
-        await removeParticipant({
-          variables: { roomId: String(roomId), participantId: String(currentUser.id) },
-        });
-      }
-    } catch (e) {
-      console.warn('Leave room error:', e);
-    } finally {
-      if (onClose) {
-        onClose();
-      } else {
-        navigate('/rooms');
-      }
-    }
-  };
-
   const handleOpenSettings = () => {
     console.log('Settings clicked');
   };
 
+  // Функция для подтверждения выхода из комнаты
+  const confirmExit = async () => {
+    setShowExitConfirmation(false);
+    if (pendingNavigation) {
+      await handleLeaveRoom();
+      navigate(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
   // Если комната еще загружается
   if (!room || roomLoading) {
+    console.log('Room loading state:', { room, roomLoading, roomId });
+    console.log('Room data available:', { roomData: !!roomData, roomDataContent: roomData });
     return (
       <div className="min-h-screen bg-[#070710] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
           <div className="text-white text-xl">Loading room... (ID: {roomId})</div>
+          <div className="text-gray-400 text-sm mt-2">
+            Room: {room ? 'Loaded' : 'Not loaded'} | Loading: {roomLoading ? 'Yes' : 'No'}
+          </div>
+          {room && (
+            <div className="text-gray-400 text-xs mt-2">
+              Room data: {room.roomName} | Participants: {room.roomParticipants ? room.roomParticipants.length : 0}
+            </div>
+          )}
+          {roomData && (
+            <div className="text-gray-400 text-xs mt-2">
+              GraphQL data: {roomData.getRoomById ? 'Available' : 'Not available'} | 
+              Participants in GraphQL: {roomData.getRoomById?.roomParticipants ? roomData.getRoomById.roomParticipants.length : 0}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -179,6 +369,14 @@ export default function Room({ currentUser, onClose, onLogout }) {
       {/* Отладочная информация */}
       <div className="fixed top-0 left-0 z-50 bg-green-500 text-white p-2 text-xs">
         Room loaded: {room?.roomName} (ID: {roomId})
+        <br />
+        Participants: {room?.roomParticipants ? room.roomParticipants.length : 0}
+        <br />
+        Room state: {room ? 'Loaded' : 'Not loaded'}
+        <br />
+        Room data: {roomData ? 'Available' : 'Not available'}
+        <br />
+        Join called: {joinCalledRef.current ? 'Yes' : 'No'}
       </div>
       
       <Header 
@@ -188,6 +386,8 @@ export default function Room({ currentUser, onClose, onLogout }) {
         isAuthenticated={true}
         currentUser={currentUser}
         onLogout={onLogout}
+        safeNavigate={safeNavigate}
+        isInRoom={true}
       />
       
       <div className="flex-1 flex pt-20">
@@ -428,6 +628,36 @@ export default function Room({ currentUser, onClose, onLogout }) {
           </div>
         </div>
       </div>
+      
+      {/* Модальное окно подтверждения выхода из комнаты */}
+      {showExitConfirmation && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#181828] rounded-2xl p-6 max-w-md w-full mx-4 border border-[#2a2a3a]">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-4">⚠️</div>
+              <h3 className="text-white text-xl font-bold mb-2">Leave Room?</h3>
+              <p className="text-gray-400">
+                Are you sure you want to leave "{room?.roomName}"? You will be disconnected from the room.
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={cancelExit}
+                className="flex-1 px-4 py-3 bg-[#2a2a3a] hover:bg-[#35356a] text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmExit}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+              >
+                Leave Room
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

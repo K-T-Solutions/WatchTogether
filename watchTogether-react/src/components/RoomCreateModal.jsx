@@ -86,14 +86,32 @@ export default function RoomCreateModal({ onClose, onLogin, onRegister, onProfil
       maxParticipants: maxP,
     };
 
+    console.log('Creating room with input:', input);
+
     try {
       const { data } = await createRoom({ variables: { input } });
+      console.log('Create room response:', data);
       if (data?.createRoom?.success) {
-        navigate("/rooms");
+        // Автоматически открываем созданную комнату
+        const roomId = data.createRoom.roomId;
+        if (roomId) {
+          console.log('Room created successfully, navigating to room:', roomId);
+          // Устанавливаем флаг в sessionStorage чтобы Room.jsx знал что пользователь уже присоединился
+          const dedupeKey = `room_join:${roomId}:${currentUser.id}`;
+          sessionStorage.setItem(dedupeKey, 'done');
+          console.log('Set sessionStorage key:', dedupeKey);
+          // Переходим в комнату
+          console.log('Setting navigation state:', { joined: true });
+          navigate(`/room/${roomId}`, { state: { joined: true } });
+        } else {
+          console.warn('Room created but no roomId returned');
+          navigate("/rooms");
+        }
       } else {
         setError(data?.createRoom?.message || "Failed to create room");
       }
     } catch (err) {
+      console.error('Create room error:', err);
       setError(err.message || "Network error");
     }
   };

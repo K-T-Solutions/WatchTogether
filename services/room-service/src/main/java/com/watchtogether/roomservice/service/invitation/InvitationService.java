@@ -1,13 +1,11 @@
 package com.watchtogether.roomservice.service.invitation;
 
-import com.watchtogether.grpc.GenerateInvitationRequest;
-import com.watchtogether.grpc.JoinRoomByInviteRequest;
-import com.watchtogether.grpc.JoinToRoomResponse;
-import com.watchtogether.roomservice.entity.ActiveRoomEntity;
+import com.watchtogether.grpc.*;
 import com.watchtogether.roomservice.entity.InvitationEntity;
 import com.watchtogether.roomservice.exception.InvalidInvitationException;
 import com.watchtogether.roomservice.repository.InvitationRepository;
 import com.watchtogether.roomservice.service.room.IRoomService;
+import com.watchtogether.roomservice.util.RoomMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +24,7 @@ public class InvitationService implements IInvitationService {
 
     private final InvitationRepository invitationRepository;
     private final IRoomService roomService;
+    private final RoomMapper roomMapper;
 
     @Override
     public InvitationEntity findByCode(String code) {
@@ -34,12 +33,12 @@ public class InvitationService implements IInvitationService {
     }
 
     @Override
-    public String generateInvitation(GenerateInvitationRequest request) { //TODO: либо просто без java Duration делать
+    public String generateInvitation(GenerateInvitationRequest request) {
         var invitationEntity = new InvitationEntity
                 (generateInvitationToken(),
                 request.getRoomId(),
                 request.getCreatorId(),
-                java.time.Duration.ofSeconds(request.getDurationSecs().getSeconds()), //TODO: check
+                java.time.Duration.ofSeconds(request.getDurationSecs().getSeconds()),
                 request.getMaxUses());
 
         invitationRepository.save(invitationEntity);
@@ -47,26 +46,42 @@ public class InvitationService implements IInvitationService {
         return invitationEntity.getCode();
     }
 
-    @Override
-    public JoinToRoomResponse.Builder joinRoomByInvite(JoinRoomByInviteRequest grpcRequest) {
-
-        var invitationEntity = validateInvitation(grpcRequest.getInviteCode());
-
-        return roomService.addParticipantToRoom(
-                invitationEntity.getRoomId(),
-                grpcRequest.getParticipant());
-    }
-
-    private InvitationEntity validateInvitation(String code) { // если не бросается исключение - все ок
+    public ValidateInvitationResponse validateInvitationCode(String code, String userId) {
         var invitationEntity = findByCode(code);
 
         if (!invitationEntity.canBeUsed()) {
             throw new InvalidInvitationException("Invitation cannot be used: expired or max uses reached");
         }
 
-        invitationEntity.use();
-        return invitationRepository.save(invitationEntity);
+        var roomEntity = roomService.findRoomById(invitationEntity.getRoomId());
+
+
+        //TODO: добавить проверки(не забанен ли и т.д.)
+
+        return ValidateInvitationResponse.newBuilder()
+                .setSuccess(true)
+                .setMessage("Invitation successfully validated")
+                .setRoom(roomMapper.mapRoomToGrpc(roomEntity))
+                .build();
     }
+
+    public JoinToRoomResponse.Builder joinToRoomByInvitation(JoinToRoomByInviteRequest request) {
+
+        var invitation = findByCode(request.getInviteCode());
+
+        if (!invitation.canBeUsed()) {
+            throw new InvalidInvitationException("Invitation cannot be used: expired or max uses reached"); //TODO: перенести из сервиса
+        }
+
+        invitation.use();
+
+        var room = roomService.addParticipantToRoom(request.getRequest());
+
+        invitationRepository.save(invitation);
+
+        return roomMapper.mapJoinToRoomResponseToGrpc(room);
+    }
+
 
     private String generateInvitationToken() {
         StringBuilder code = new StringBuilder(INVITATION_TOKEN_LENGTH);

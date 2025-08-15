@@ -5,6 +5,7 @@ import com.watchtogether.apigateway.enums.GraphQLRoomType;
 import com.watchtogether.apigateway.graphql.controller.RoomController;
 import com.watchtogether.grpc.RoomCategory;
 import com.watchtogether.grpc.RoomParticipant;
+import com.watchtogether.grpc.RoomResponse;
 import com.watchtogether.grpc.RoomType;
 import org.springframework.stereotype.Component;
 
@@ -93,6 +94,20 @@ public class RoomMapper {
         return new RoomController.RoomParticipant(
                 grpcParticipant.getUserId(),
                 grpcParticipant.getDisplayName());
+    }
+
+    public RoomController.RoomResponse mapRoomToGraphQL(RoomResponse grpcResponse) {
+        return new RoomController.RoomResponse(
+                grpcResponse.getRoomId(),
+                mapParticipantToGraphQL(grpcResponse.getRoomCreator()),
+                grpcResponse.getRoomName(),
+                grpcResponse.getRoomDescription(),
+                mapTypeToGraphQL(grpcResponse.getRoomType()),
+                mapCategoryToGraphQL(grpcResponse.getRoomCategory()),
+                grpcResponse.getMaxParticipants(),
+                grpcResponse.getNeedPassword(),
+                grpcResponse.getParticipantNumber(),
+                grpcResponse.getCreatedAt().toString());
     }
 
 }
