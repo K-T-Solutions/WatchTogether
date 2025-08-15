@@ -3,6 +3,7 @@ package com.watchtogether.apigateway.grpc;
 import com.watchtogether.apigateway.enums.GraphQLRoomCategory;
 import com.watchtogether.apigateway.graphql.input.AddParticipantUnput;
 import com.watchtogether.apigateway.graphql.input.CreateRoomInput;
+import com.watchtogether.apigateway.graphql.input.JoinToRoomByInviteInput;
 import com.watchtogether.apigateway.util.RoomMapper;
 import com.watchtogether.grpc.*;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class RoomGrpcClient {
                         .build());
     }
 
-    public CreateRoomResponse createRoom(CreateRoomInput dto) {
+    public JoinToRoomResponse createRoom(CreateRoomInput dto) {
         return blockingStub.createRoom(com.watchtogether.grpc.CreateRoomRequest
                     .newBuilder()
                         .setRoomCreator(RoomParticipant.newBuilder()
@@ -83,14 +84,37 @@ public class RoomGrpcClient {
         return blockingStub.generateInvitation(request);
     }
 
-    public JoinToRoomResponse joinRoomByInvite(String inviteCode, String userId, String userName) {
-        return blockingStub.joinRoomByInvite(JoinRoomByInviteRequest.newBuilder()
-                        .setInviteCode(inviteCode)
-                        .setParticipant(RoomParticipant.newBuilder()
-                                .setUserId(userId)
-                                .setDisplayName(userName)
-                                .build())
-                        .build());
+    public ValidateInvitationResponse validateInvitation(String inviteCode, String userId) {
+        return blockingStub.validateInvitation(ValidateInvitationRequest
+                .newBuilder()
+                .setCode(inviteCode)
+                .setUserId(userId)
+                .build());
     }
+
+    public JoinToRoomResponse joinToRoomByInvite(JoinToRoomByInviteInput input) {
+        return blockingStub.joinToRoomByInvite(JoinToRoomByInviteRequest
+                .newBuilder()
+                        .setInviteCode(input.getInviteCode())
+                        .setRequest(AddParticipantRequest.newBuilder()
+                                .setRoomId(input.getParticipantInfo().getRoomId().toString())
+                                .setParticipant(RoomParticipant.newBuilder()
+                                    .setUserId(input.getParticipantInfo().getParticipantId().toString())
+                                    .setDisplayName(input.getParticipantInfo().getParticipantDisplayName())
+                                .   build())
+                                .setPassword(input.getParticipantInfo().getPassword())
+                                .build())
+                .build());
+    }
+
+//    public JoinToRoomResponse joinRoomByInvite(String inviteCode, String userId, String userName) {
+//        return blockingStub.joinRoomByInvite(JoinRoomByInviteRequest.newBuilder()
+//                        .setInviteCode(inviteCode)
+//                        .setParticipant(RoomParticipant.newBuilder()
+//                                .setUserId(userId)
+//                                .setDisplayName(userName)
+//                                .build())
+//                        .build());
+//    }
 
 }
