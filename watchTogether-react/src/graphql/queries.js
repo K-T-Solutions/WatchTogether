@@ -66,3 +66,28 @@ export const GET_ROOM_BY_ID = gql`
     }
   }
 `;
+
+// Валидация инвайт-кода
+export const VALIDATE_INVITATION = gql`
+  query ValidateInvitation($inviteCode: String!, $userId: ID!) {
+    validateInvitation(inviteCode: $inviteCode, userId: $userId) {
+      success
+      message
+      room {
+        roomId
+        roomCreator {
+          userId
+          displayName
+        }
+        roomName
+        roomDescription
+        roomType
+        roomCategory
+        maxParticipants
+        needPassword
+        participantsNumber
+        createdAt
+      }
+    }
+  }
+`;

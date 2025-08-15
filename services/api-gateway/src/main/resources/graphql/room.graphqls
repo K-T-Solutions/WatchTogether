@@ -13,15 +13,12 @@ extend type Query {
     # Получение комнат по категории
     getRoomsByCategory(category: RoomCategory!): RoomListResponse!
 
-
-    joinRoomByInvite(inviteCode: String!, userId: ID!, userName: String!): JoinRoomResponse!
-
-
+    validateInvitation(inviteCode: String!, userId: ID!): ValidateInvitationResponse!
 }
 
 extend type Mutation {
     # Создание новой комнаты
-    createRoom(input: CreateRoomRequest!): CreateRoomResponse
+    createRoom(input: CreateRoomRequest!): JoinRoomResponse!
 
     # Добавление участника в комнату
     joinToRoom(request: AddParticipantRequest!): JoinRoomResponse!
@@ -30,6 +27,8 @@ extend type Mutation {
     removeParticipantFromRoom(roomId: ID!, participantId: ID!): Boolean
 
     generateInvitation(input: GenerateInvitationRequest!): GenerateInvitationResponse!
+
+    joinToRoomByInvite(input: JoinToRoomByInvite!): JoinRoomResponse!
 }
 
 # ========== Основные типы ==========
@@ -92,6 +91,12 @@ type RoomParticipant {
     displayName: String
 }
 
+type ValidateInvitationResponse {
+    success: Boolean!
+    message: String!
+    room: RoomResponse
+}
+
 # ========== Входные типы ==========
 
 input CreateRoomRequest {
@@ -122,6 +127,11 @@ input GenerateInvitationRequest {
     creatorId: ID!
     durationSecs: Int
     maxUses: Int
+}
+
+input JoinToRoomByInvite {
+    inviteCode: String!
+    participantInfo: AddParticipantRequest!
 }
 
 # ========== Enums ==========

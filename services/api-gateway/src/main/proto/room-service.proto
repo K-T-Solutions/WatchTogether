@@ -23,7 +23,7 @@ service RoomService {
   rpc GetRoomsByCategory(GetRoomsByCategoryRequest) returns (RoomListResponse);
 
   // Create new room
-  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
+  rpc CreateRoom(CreateRoomRequest) returns (JoinToRoomResponse);
 
   // Add participant to room
   rpc AddParticipantToRoom(AddParticipantRequest) returns (JoinToRoomResponse);
@@ -33,7 +33,9 @@ service RoomService {
 
   rpc GenerateInvitation(GenerateInvitationRequest) returns (GenerateInvitationResponse);
 
-  rpc JoinRoomByInvite(JoinRoomByInviteRequest) returns (JoinToRoomResponse);
+  rpc ValidateInvitation(ValidateInvitationRequest) returns (ValidateInvitationResponse);
+
+  rpc JoinToRoomByInvite(JoinToRoomByInviteRequest) returns (JoinToRoomResponse);
 
 }
 
@@ -78,9 +80,9 @@ message GenerateInvitationRequest {
   int32 max_uses = 4;
 }
 
-message JoinRoomByInviteRequest {
+message JoinToRoomByInviteRequest {
   string invite_code = 1;
-  RoomParticipant participant = 2;
+  AddParticipantRequest request = 2;
 }
 
 // Responses
@@ -95,14 +97,10 @@ message RoomResponse {
   bool needPassword = 8;
   int32 participant_number = 9;
   google.protobuf.Timestamp created_at = 10;
-  //  repeated string participant_ids = 8;
-  //  google.protobuf.Timestamp created_at = 9;
-  //  RoomStatus status = 10; // надо или нет?
 }
 
 message RoomListResponse {
   repeated RoomResponse rooms = 1;
-  //  int32 total_count = 2;
 }
 
 message CreateRoomResponse {
@@ -136,8 +134,15 @@ message GenerateInvitationResponse {
   string link = 2;
 }
 
-message JoinRoomByInviteResponse {
-  bool success = 1; //TODO: change
+message ValidateInvitationRequest {
+  string code = 1;
+  string user_id = 2;
+}
+
+message ValidateInvitationResponse {
+  bool success = 1;
+  string message = 2;
+  RoomResponse room = 3;
 }
 
 // Enums

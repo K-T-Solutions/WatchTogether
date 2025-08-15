@@ -38,9 +38,21 @@ export const CREATE_ROOM = gql`
     createRoom(input: $input) {
       success
       message
+      roomId
+      roomName
+      roomDescription
+      roomType
+      roomCategory
+      maxParticipants
+      participantsNumber
+      createdAt
+      roomParticipants {
+        userId
+        displayName
+      }
     }
   }
-`; 
+`;
 
 // Мутация для входа в комнату (добавление участника) и получения актуальных данных комнаты
 export const JOIN_TO_ROOM = gql`
@@ -68,5 +80,27 @@ export const JOIN_TO_ROOM = gql`
 export const REMOVE_PARTICIPANT_FROM_ROOM = gql`
   mutation RemoveParticipantFromRoom($roomId: ID!, $participantId: ID!) {
     removeParticipantFromRoom(roomId: $roomId, participantId: $participantId)
+  }
+`;
+
+// Мутация входа в комнату по инвайту
+export const JOIN_TO_ROOM_BY_INVITE = gql`
+  mutation JoinToRoomByInvite($input: JoinToRoomByInvite!) {
+    joinToRoomByInvite(input: $input) {
+      success
+      message
+      roomId
+      roomName
+      roomDescription
+      roomType
+      roomCategory
+      maxParticipants
+      participantsNumber
+      createdAt
+      roomParticipants {
+        userId
+        displayName
+      }
+    }
   }
 `;
